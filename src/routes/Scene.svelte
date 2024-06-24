@@ -54,7 +54,7 @@
 />
 
 <T.Mesh>
-    <T.SphereGeometry args={[500, 60, 80]}/>
+    <T.SphereGeometry args={[500, 120, 120]}/>
 
     {#if texture}
         <T.MeshStandardMaterial map={texture} side={THREE.BackSide}/>
