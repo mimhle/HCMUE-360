@@ -1,7 +1,7 @@
 <script>
-    import { T, useTask, useThrelte } from "@threlte/core";
-    import { Gizmo, interactivity, OrbitControls, TrackballControls, useTexture } from "@threlte/extras";
-    import { Checkbox, Pane, ThemeUtils, Slider } from 'svelte-tweakpane-ui';
+    import { T, useTask } from "@threlte/core";
+    import { Gizmo, interactivity, OrbitControls, useTexture } from "@threlte/extras";
+    import testImg from "$lib/assets/testImg.jpg";
     import { spring } from "svelte/motion";
     import { onMount } from "svelte";
     import * as THREE from "three";
@@ -17,11 +17,9 @@
     });
 
     let texture;
-    useTexture('./src/lib/test.jpg').then((t) => {
+    useTexture(testImg).then((t) => {
         texture = t;
     });
-
-    const { renderer, invalidate } = useThrelte();
 
     let cameraControls;
 
