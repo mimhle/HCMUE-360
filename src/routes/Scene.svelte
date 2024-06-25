@@ -6,10 +6,12 @@
     import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
     import { CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
     import CssObject from "./CssObject.svelte";
+    import { onMount } from "svelte";
 
     interactivity();
 
     let x = 0;
+    let rotateSpeed = -0.25;
     let texture;
     useTexture(String(testImg)).then((t) => {
         texture = t;
@@ -34,6 +36,12 @@
         autoInvalidate: false
     });
 
+    onMount(() => {
+        if (window.innerWidth < 768) {
+            rotateSpeed = -0.7;
+        }
+    });
+
 </script>
 
 <T.PerspectiveCamera
@@ -47,7 +55,7 @@
             x = 1;
         }}
 >
-    <OrbitControls enableDamping rotateSpeed={-0.2} enablePan={false} enableZoom={false}/>
+    <OrbitControls enableDamping rotateSpeed={rotateSpeed} enablePan={false} enableZoom={false}/>
 </T.PerspectiveCamera>
 
 <T.AmbientLight intensity={2}/>
@@ -66,33 +74,37 @@
     {/if}
 </T.Mesh>
 
-<T.GridHelper args={[10, 10]}/>
 
-<CssObject position={[0, -10, 40]}
-           center={[0, 0]}
-           pointerEvents={true}
->
-    <div class="bg-gray-500 text-white p-2">
-        <button on:click={() => alert("button clicked")}>this is a button</button>
-    </div>
-</CssObject>
+{#if texture}
+    <T.GridHelper args={[10, 10]}/>
 
-<CssObject position={[40, 10, 0]}
-           center={[0, 0]}
-           pointerEvents={true}
->
-    <div class="bg-gray-500 text-white p-2">
-        <button>pop up</button>
-    </div>
-</CssObject>
+    <CssObject position={[0, -10, 40]}
+               center={[0, 0]}
+               pointerEvents={true}
+    >
+        <div class="bg-gray-500 text-white -translate-x-1/2">
+            <button class="p-2" on:click={() => alert("button clicked")}>this is a button</button>
+        </div>
+    </CssObject>
 
-<CssObject position={[-100, -30, -40]}
-           center={[0, 0]}
-           pointerEvents={true}
-           threeD={true}
->
-    <!--TODO: rotate this-->
-    <div class="bg-gray-500 text-white p-2">
-        <button>ground</button>
-    </div>
-</CssObject>
+    <CssObject position={[40, 10, 0]}
+               center={[0, 0]}
+               pointerEvents={true}
+    >
+        <div class="bg-gray-500 text-white -translate-x-1/2">
+            <button class="p-2">pop up (not implemented)</button>
+        </div>
+    </CssObject>
+
+    <CssObject position={[-120, -30, 0]}
+               center={[0, 0]}
+               pointerEvents={true}
+               rotation={[-0.5*Math.PI, 0, 0.5*Math.PI]}
+               threeD={true}
+    >
+        <!--TODO: rotate this-->
+        <div class="bg-transparent text-white">
+            <button class="p-2"><i class="fa fa-chevron-up fa-lg"></i></button>
+        </div>
+    </CssObject>
+{/if}
