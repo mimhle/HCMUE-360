@@ -7,15 +7,14 @@
     import { CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
     import CssObject from "./CssObject.svelte";
     import { onMount } from "svelte";
+    import { Element, FpsGraph, Pane, Slider, ThemeUtils } from "svelte-tweakpane-ui";
 
     interactivity();
 
     let x = 0;
     let rotateSpeed = -0.25;
-    let texture;
-    useTexture(String(testImg)).then((t) => {
-        texture = t;
-    });
+    let lighting = 3;
+    let texture = useTexture(String(testImg));
 
     const { scene, size, autoRenderTask, camera } = useThrelte();
     const element2d = document.querySelector("#css-renderer-target-2d");
@@ -58,7 +57,7 @@
     <OrbitControls enableDamping rotateSpeed={rotateSpeed} enablePan={false} enableZoom={false}/>
 </T.PerspectiveCamera>
 
-<T.AmbientLight intensity={2}/>
+<T.AmbientLight intensity={lighting}/>
 
 <Gizmo
         horizontalPlacement="left"
@@ -66,12 +65,11 @@
         paddingY={20}
 />
 
-<T.Mesh>
-    <T.SphereGeometry args={[500, 120, 120]}/>
-
-    {#if texture}
-        <T.MeshStandardMaterial map={texture} side={THREE.BackSide}/>
-    {/if}
+<T.Mesh scale.x={-1}>
+    <T.SphereGeometry args={[100, 120, 120]}/>
+    {#await texture then texture}
+        <T.MeshStandardMaterial map={texture} side={THREE.BackSide} toneMapped={false}/>
+    {/await}
 </T.Mesh>
 
 
@@ -106,4 +104,22 @@
             <button class="p-2"><i class="fa fa-chevron-up fa-lg"></i></button>
         </div>
     </CssObject>
+
+    <Pane
+            theme={ThemeUtils.presets.light}
+            position="fixed"
+            title="test"
+    >
+        <FpsGraph interval={50} label="FPS" rows={2} />
+        <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
+        <Element>
+            <input type="file" accept="image/*" on:change={e => {
+                const reader = new FileReader();
+                reader.addEventListener( 'load', function ( event ) {
+                    texture = new THREE.TextureLoader().load(event.target.result.toString());
+                });
+                reader.readAsDataURL(e.target.files[0]);
+            }}/>
+        </Element>
+    </Pane>
 {/if}
