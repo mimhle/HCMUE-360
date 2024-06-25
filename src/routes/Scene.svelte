@@ -80,7 +80,7 @@
                center={[0, 0]}
                pointerEvents={true}
     >
-        <div class="bg-gray-500 text-white -translate-x-1/2">
+        <div class="bg-surface text-white -translate-x-1/2">
             <button class="p-2" on:click={() => alert("button clicked")}>this is a button</button>
         </div>
     </CssObject>
@@ -89,19 +89,19 @@
                center={[0, 0]}
                pointerEvents={true}
     >
-        <div class="bg-gray-500 text-white -translate-x-1/2">
-            <button class="p-2">pop up (not implemented)</button>
+        <div class="bg-surface text-white w-12 -translate-x-1/2 rounded-full aspect-square animate-pulse-btn">
+            <button class="p-2 w-full h-full"><i class="fa fa-info fa-2x"></i></button>
         </div>
     </CssObject>
 
     <CssObject position={[-120, -30, 0]}
                center={[0, 0]}
                pointerEvents={true}
-               rotation={[-0.5*Math.PI, 0, 0.5*Math.PI]}
+               rotation={[-0.5*Math.PI, Math.PI, 0.5*Math.PI]}
                threeD={true}
     >
-        <div class="bg-transparent text-white">
-            <button class="p-2"><i class="fa fa-chevron-up fa-lg"></i></button>
+        <div class="bg-transparent text-white animate-bounce">
+            <button class="p-2"><i class="fa fa-chevron-down fa-lg"></i></button>
         </div>
     </CssObject>
 
