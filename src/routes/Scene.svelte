@@ -102,7 +102,6 @@
                rotation={[-0.5*Math.PI, 0, 0.5*Math.PI]}
                threeD={true}
     >
-        <!--TODO: rotate this-->
         <div class="bg-transparent text-white">
             <button class="p-2"><i class="fa fa-chevron-up fa-lg"></i></button>
         </div>
