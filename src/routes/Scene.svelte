@@ -7,11 +7,11 @@
     import CssObject from "./CssObject.svelte";
     import { onMount } from "svelte";
     import {
+        Button,
         Checkbox,
         Element, Folder,
-        FpsGraph,
         Pane, Point, RadioGrid,
-        RotationEuler,
+        RotationEuler, Separator,
         Slider, Text,
         ThemeUtils,
         Wheel
@@ -21,16 +21,23 @@
     interactivity();
 
     export let sceneData;
+    export let perf = true;
 
-    let lighting = 3;
+    let lighting = Math.PI;
     let grid = true;
     let cameraPosX = 1;
     let cameraPosY = 0;
     let cameraPosZ = 0;
     let cameraFov = 60;
+    let sphereRadius = 100;
+    let sphereSegmentsW = 48;
+    let sphereSegmentsH = 48;
+    let cameraRef = null;
 
     let positions = [];
     let rotations = [];
+
+    let imgUrl = "";
 
     let rotateSpeed = -0.25;
     let texture = null;
@@ -68,17 +75,6 @@
                 texture.colorSpace = THREE.SRGBColorSpace;
                 positions = sceneData.options.map(option => option.position);
                 rotations = sceneData.options.map(option => option.rotation);
-
-                // TODO: preload
-                // preload
-                // setTimeout(() => {
-                //     sceneData.options.forEach(option => {
-                //         if (option.type === "navigation") {
-                //             const next_id = getScene(option.nextSceneId);
-                //             new THREE.TextureLoader().load(next_id.image, () => {});
-                //         }
-                //     });
-                // }, 1000);
             });
         }
     };
@@ -96,9 +92,7 @@
         fov={cameraFov}
         near={1}
         far={1000}
-        on:create={({ ref }) => {
-            ref.lookAt(0, 0, 0);
-        }}
+        bind:ref={cameraRef}
 >
     <OrbitControls enableDamping rotateSpeed={rotateSpeed} enablePan={false} enableZoom={false}/>
 </T.PerspectiveCamera>
@@ -112,7 +106,7 @@
 />
 
 <T.Mesh scale.x={-1}>
-    <T.SphereGeometry args={[100, 120, 120]}/>
+    <T.SphereGeometry args={[sphereRadius, sphereSegmentsW, sphereSegmentsH]}/>
     {#if texture}
         <T.MeshStandardMaterial map={texture} side={THREE.BackSide} toneMapped={false}/>
     {/if}
@@ -121,7 +115,7 @@
 
 {#if texture && sceneData}
     {#if grid}
-        <T.PolarGridHelper args={[100, 10, 100, 10]}/>
+        <T.PolarGridHelper args={[20, 16, 20, 16]}/>
     {/if}
 
     {#each sceneData.options as option, i (i)}
@@ -160,7 +154,9 @@
             position="fixed"
             title="test"
     >
-        <FpsGraph interval={50} label="FPS" rows={2}/>
+        <Checkbox bind:value={perf} label="Performance"/>
+        <Wheel label="Segments W" min={0} max={120} step={1} bind:value={sphereSegmentsW}/>
+        <Wheel label="Segments H" min={0} max={120} step={1} bind:value={sphereSegmentsH}/>
         <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
         <Checkbox bind:value={grid} label="Grid"/>
         <Wheel bind:value={cameraFov} format={(v) => `${v}°`} label="Camera FOV" step={1}/>
@@ -185,16 +181,30 @@
             <Text value="Not implemented" disabled/>
             <RadioGrid values={["Popup", "Navigation"]}/>
         </Folder>
+        <Folder title="Add scene" expanded={false}>
+            <Text value="Not implemented" disabled/>
+        </Folder>
         <Folder title="Change image" expanded={false}>
             <Element>
-                <input type="file" accept="image/*" on:change={e => {
+                <input class="my-1" type="file" accept="image/*" on:change={e => {
                     const reader = new FileReader();
                     reader.addEventListener('load', function ( event ) {
-                        texture = new THREE.TextureLoader().load(event.target.result.toString());
+                        new THREE.TextureLoader().load(event.target.result.toString(), (t) => {
+                            texture = t;
+                            texture.colorSpace = THREE.SRGBColorSpace;
+                        });
                     });
                     reader.readAsDataURL(e.target.files[0]);
                 }}/>
             </Element>
+            <Separator/>
+            <Text label="From url: " bind:value={imgUrl}/>
+            <Button title="Load" on:click={() => {
+                new THREE.TextureLoader().load(imgUrl, (t) => {
+                    texture = t;
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                });
+            }}/>
         </Folder>
     </Pane>
 {/if}
