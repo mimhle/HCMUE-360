@@ -1,20 +1,40 @@
 <script>
     import { T, useTask, useThrelte } from "@threlte/core";
-    import { Gizmo, interactivity, OrbitControls, useTexture } from "@threlte/extras";
-    import testImg from "$lib/assets/testImg.jpg";
+    import { Gizmo, interactivity, OrbitControls } from "@threlte/extras";
     import * as THREE from "three";
     import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
     import { CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
     import CssObject from "./CssObject.svelte";
     import { onMount } from "svelte";
-    import { Element, FpsGraph, Pane, Slider, ThemeUtils } from "svelte-tweakpane-ui";
+    import {
+        Checkbox,
+        Element, Folder,
+        FpsGraph,
+        Pane, Point, RadioGrid,
+        RotationEuler,
+        Slider, Text,
+        ThemeUtils,
+        Wheel
+    } from "svelte-tweakpane-ui";
+    import { getScene } from "$lib/db_test.js";
 
     interactivity();
 
-    let x = 0;
-    let rotateSpeed = -0.25;
+    export let sceneData;
+
     let lighting = 3;
-    let texture = useTexture(String(testImg));
+    let grid = true;
+    let cameraPosX = 1;
+    let cameraPosY = 0;
+    let cameraPosZ = 0;
+    let cameraFov = 60;
+
+    let positions = [];
+    let rotations = [];
+
+    let rotateSpeed = -0.25;
+    // let texture = useTexture("https://live.staticflickr.com/65535/53797725269_d48e6b614c_o_d.jpg");
+    let texture = null;
 
     const { scene, size, autoRenderTask, camera } = useThrelte();
     const element2d = document.querySelector("#css-renderer-target-2d");
@@ -41,17 +61,43 @@
         }
     });
 
+    const processSceneData = (sceneData) => {
+        if (sceneData) {
+            texture = null;
+            new THREE.TextureLoader().load(sceneData.image, (t) => {
+                texture = t;
+                positions = sceneData.options.map(option => option.position);
+                rotations = sceneData.options.map(option => option.rotation);
+
+                // TODO: preload
+                // preload
+                // setTimeout(() => {
+                //     sceneData.options.forEach(option => {
+                //         if (option.type === "navigation") {
+                //             const next_id = getScene(option.nextSceneId);
+                //             new THREE.TextureLoader().load(next_id.image, () => {});
+                //         }
+                //     });
+                // }, 1000);
+            });
+        }
+    };
+
+    $: if (sceneData) {
+        processSceneData(sceneData);
+    }
+
+
 </script>
 
 <T.PerspectiveCamera
         makeDefault
-        position={[x, 0, 0]}
-        fov={60}
+        position={[cameraPosX, cameraPosY, cameraPosZ]}
+        fov={cameraFov}
         near={1}
         far={1000}
         on:create={({ ref }) => {
-            ref.lookAt(0, 0, 0)
-            x = 1;
+            ref.lookAt(0, 0, 0);
         }}
 >
     <OrbitControls enableDamping rotateSpeed={rotateSpeed} enablePan={false} enableZoom={false}/>
@@ -67,59 +113,88 @@
 
 <T.Mesh scale.x={-1}>
     <T.SphereGeometry args={[100, 120, 120]}/>
-    {#await texture then texture}
+    {#if texture}
         <T.MeshStandardMaterial map={texture} side={THREE.BackSide} toneMapped={false}/>
-    {/await}
+    {/if}
 </T.Mesh>
 
 
-{#if texture}
-    <T.GridHelper args={[10, 10]}/>
+{#if texture && sceneData}
+    {#if grid}
+        <T.PolarGridHelper args={[100, 10, 100, 10]}/>
+    {/if}
 
-    <CssObject position={[0, -10, 40]}
-               center={[0, 0]}
-               pointerEvents={true}
-    >
-        <div class="bg-surface text-white -translate-x-1/2">
-            <button class="p-2" on:click={() => alert("button clicked")}>this is a button</button>
-        </div>
-    </CssObject>
-
-    <CssObject position={[40, 10, 0]}
-               center={[0, 0]}
-               pointerEvents={true}
-    >
-        <div class="bg-surface text-white w-12 -translate-x-1/2 rounded-full aspect-square animate-pulse-btn">
-            <button class="p-2 w-full h-full"><i class="fa fa-info fa-2x"></i></button>
-        </div>
-    </CssObject>
-
-    <CssObject position={[-120, -30, 0]}
-               center={[0, 0]}
-               pointerEvents={true}
-               rotation={[-0.5*Math.PI, Math.PI, 0.5*Math.PI]}
-               threeD={true}
-    >
-        <div class="bg-transparent text-white animate-bounce">
-            <button class="p-2"><i class="fa fa-chevron-down fa-lg"></i></button>
-        </div>
-    </CssObject>
+    {#each sceneData.options as option, i (i)}
+        {#if option.type === "popup"}
+            <CssObject position={positions[i]}
+                       center={option.center}
+                       rotation={rotations[i]}
+                       pointerEvents={true}
+            >
+                <div class="bg-surface text-white -translate-x-1/2 {option.rounded ? `rounded-full` : ``} {option.animated ? `animate-pulse-btn` : ``}">
+                    <button class="p-2" on:click={() => alert("button clicked")}>
+                        {option.text}
+                    </button>
+                </div>
+            </CssObject>
+        {:else if option.type === "navigation"}
+            <CssObject position={positions[i]}
+                       center={option.center}
+                       rotation={rotations[i]}
+                       pointerEvents={true}
+                       threeD={true}
+            >
+                <div class="bg-transparent text-white {option.animated ? `animate-bounce` : ``}">
+                    <button class="p-2" on:click={() =>{
+                        sceneData = getScene(option.nextSceneId);
+                    }}>
+                        <i class="fa fa-chevron-down fa-lg"></i>
+                    </button>
+                </div>
+            </CssObject>
+        {/if}
+    {/each}
 
     <Pane
             theme={ThemeUtils.presets.light}
             position="fixed"
             title="test"
     >
-        <FpsGraph interval={50} label="FPS" rows={2} />
+        <FpsGraph interval={50} label="FPS" rows={2}/>
         <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
-        <Element>
-            <input type="file" accept="image/*" on:change={e => {
-                const reader = new FileReader();
-                reader.addEventListener( 'load', function ( event ) {
-                    texture = new THREE.TextureLoader().load(event.target.result.toString());
-                });
-                reader.readAsDataURL(e.target.files[0]);
-            }}/>
-        </Element>
+        <Checkbox bind:value={grid} label="Grid"/>
+        <Wheel bind:value={cameraFov} format={(v) => `${v}°`} label="Camera FOV" step={1}/>
+        {#each sceneData.options as _, i (i)}
+            <Folder title={sceneData.options[i].text} expanded={false}>
+                {#if sceneData.options[i].type === "navigation"}
+                    <RotationEuler bind:value={rotations[i]}
+                                   expanded={false}
+                                   label="Rotation"
+                                   picker={'inline'}
+                    />
+                {/if}
+                <Point bind:value={positions[i]}
+                       expanded={false}
+                       label="Position"
+                       picker="inline"
+                       userExpandable={false}
+                />
+            </Folder>
+        {/each}
+        <Folder title="Add option" expanded={false}>
+            <Text value="Not implemented" disabled/>
+            <RadioGrid values={["Popup", "Navigation"]}/>
+        </Folder>
+        <Folder title="Change image" expanded={false}>
+            <Element>
+                <input type="file" accept="image/*" on:change={e => {
+                    const reader = new FileReader();
+                    reader.addEventListener('load', function ( event ) {
+                        texture = new THREE.TextureLoader().load(event.target.result.toString());
+                    });
+                    reader.readAsDataURL(e.target.files[0]);
+                }}/>
+            </Element>
+        </Folder>
     </Pane>
 {/if}

@@ -2,10 +2,13 @@
     import { Canvas } from "@threlte/core";
     import Scene from "./Scene.svelte";
     import { onMount } from "svelte";
+    import { getScene } from "$lib/db_test.js";
 
     let height = 0;
+    let scene;
     onMount(() => {
         height = window.innerHeight;
+        scene = getScene(1);
     })
 </script>
 
@@ -17,6 +20,8 @@
 
 <div style={`height: ${height}px;`}>
     <Canvas>
-        <Scene/>
+        {#if scene}
+            <Scene sceneData={scene}/>
+        {/if}
     </Canvas>
 </div>
