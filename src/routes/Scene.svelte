@@ -33,7 +33,6 @@
     let rotations = [];
 
     let rotateSpeed = -0.25;
-    // let texture = useTexture("https://live.staticflickr.com/65535/53797725269_d48e6b614c_o_d.jpg");
     let texture = null;
 
     const { scene, size, autoRenderTask, camera } = useThrelte();
@@ -66,6 +65,7 @@
             texture = null;
             new THREE.TextureLoader().load(sceneData.image, (t) => {
                 texture = t;
+                texture.colorSpace = THREE.SRGBColorSpace;
                 positions = sceneData.options.map(option => option.position);
                 rotations = sceneData.options.map(option => option.rotation);
 

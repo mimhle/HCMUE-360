@@ -3,7 +3,7 @@ const DB = [
         id: 1,
         name: "scene1",
         description: "scene1 description",
-        image: "https://github.com/mimhle/HCMUE-360/blob/main/src/lib/assets/testImg.jpg?raw=true",
+        image: "https://mimhle.github.io/HCMUE-360/testImg.jpg",
         options: [
             {
                 text: "option1",
@@ -40,7 +40,7 @@ const DB = [
         id: 2,
         name: "scene2",
         description: "scene2 description",
-        image: "https://github.com/mimhle/HCMUE-360/blob/main/src/lib/assets/testImg2.jpg?raw=true",
+        image: "https://mimhle.github.io/HCMUE-360/testImg2.jpg",
         options: [
             {
                 text: "option1",

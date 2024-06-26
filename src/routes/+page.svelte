@@ -3,6 +3,7 @@
     import Scene from "./Scene.svelte";
     import { onMount } from "svelte";
     import { getScene } from "$lib/db_test.js";
+    import * as THREE from "three";
 
     let height = 0;
     let scene;
@@ -19,7 +20,7 @@
 <div id="css-renderer-target-3d" class="absolute top-0 right-0 pointer-events-none"></div>
 
 <div style={`height: ${height}px;`}>
-    <Canvas>
+    <Canvas toneMapping={THREE.NoToneMapping}>
         {#if scene}
             <Scene sceneData={scene}/>
         {/if}
