@@ -24,3 +24,9 @@
         box-shadow: 0 0 0 0 rgba(var(--color-surface), 0);
     }
 }
+
+/* svelte-tweakpane-ui pane*/
+.svelte-tweakpane-ui {
+    max-height: 97vh;
+    overflow: scroll;
+}

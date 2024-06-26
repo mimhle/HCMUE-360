@@ -9,7 +9,6 @@ const DB = [
                 text: "option1",
                 type: "popup",
                 position: [-30, -10, 40],
-                center: [0, 0, 0],
                 rotation: [0, 0, 0],
                 animated: true,
                 rounded: false,
@@ -19,7 +18,6 @@ const DB = [
                 text: "option2",
                 type: "popup",
                 position: [40, 10, 10],
-                center: [0, 0, 0],
                 rotation: [0, 0, 0],
                 animated: true,
                 rounded: true,
@@ -29,7 +27,6 @@ const DB = [
                 text: "option3",
                 type: "navigation",
                 position: [-120, -30, 0],
-                center: [0, 0, 0],
                 rotation: [-0.5*Math.PI, Math.PI, 0.5*Math.PI],
                 animated: true,
                 nextSceneId: 2,
@@ -46,7 +43,6 @@ const DB = [
                 text: "option1",
                 type: "popup",
                 position: [0, -10, 40],
-                center: [0, 0, 0],
                 rotation: [0, 0, 0],
                 animated: true,
                 rounded: false,
@@ -56,7 +52,6 @@ const DB = [
                 text: "option2",
                 type: "popup",
                 position: [40, 10, 0],
-                center: [0, 0, 0],
                 rotation: [0, 0, 0],
                 animated: true,
                 rounded: true,
@@ -66,7 +61,6 @@ const DB = [
                 text: "option3",
                 type: "navigation",
                 position: [120, -30, 0],
-                center: [0, 0, 0],
                 rotation: [-0.5*Math.PI, Math.PI, 0.5*Math.PI],
                 animated: true,
                 nextSceneId: 1,
@@ -77,5 +71,10 @@ const DB = [
 
 
 export const getScene = (sceneId) => {
-    return DB.find(scene => scene.id === sceneId);
+    return JSON.parse(JSON.stringify(DB.find(scene => scene.id === sceneId)));
 };
+
+export const updateScene = (sceneId, scene) => {
+    const index = DB.findIndex(scene => scene.id === sceneId);
+    DB[index] = scene;
+}

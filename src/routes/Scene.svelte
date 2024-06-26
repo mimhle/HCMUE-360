@@ -16,12 +16,14 @@
         ThemeUtils,
         Wheel
     } from "svelte-tweakpane-ui";
-    import { getScene } from "$lib/db_test.js";
+    import { getScene, updateScene } from "$lib/db_test.js";
 
     interactivity();
 
     export let sceneData;
     export let perf = true;
+
+    let _sceneData;
 
     let lighting = Math.PI;
     let grid = true;
@@ -33,6 +35,12 @@
     let sphereSegmentsW = 48;
     let sphereSegmentsH = 48;
     let cameraRef = null;
+
+    let newType = "Popup";
+    let newText = "";
+    let newNextId = "";
+    let newAnimated = true;
+    let newRounded = true;
 
     let positions = [];
     let rotations = [];
@@ -67,16 +75,26 @@
         }
     });
 
-    const processSceneData = (sceneData) => {
-        if (sceneData) {
+    const processSceneData = (data) => {
+        if (data) {
             texture = null;
-            new THREE.TextureLoader().load(sceneData.image, (t) => {
+            new THREE.TextureLoader().load(data.image, (t) => {
                 texture = t;
                 texture.colorSpace = THREE.SRGBColorSpace;
-                positions = sceneData.options.map(option => option.position);
-                rotations = sceneData.options.map(option => option.rotation);
+                positions = data.options.map(option => option.position);
+                rotations = data.options.map(option => option.rotation);
+                _sceneData = sceneData;
             });
         }
+    };
+
+    const save = () => {
+        sceneData.options = _sceneData.options.map((option, i) => {
+            option.position = positions[i];
+            option.rotation = rotations[i];
+            return option;
+        });
+        updateScene(_sceneData.id, sceneData);
     };
 
     $: if (sceneData) {
@@ -113,15 +131,15 @@
 </T.Mesh>
 
 
-{#if texture && sceneData}
+{#if texture && _sceneData}
     {#if grid}
         <T.PolarGridHelper args={[20, 16, 20, 16]}/>
     {/if}
 
-    {#each sceneData.options as option, i (i)}
+    {#each _sceneData.options as option, i (i)}
         {#if option.type === "popup"}
             <CssObject position={positions[i]}
-                       center={option.center}
+                       center={[0, 0]}
                        rotation={rotations[i]}
                        pointerEvents={true}
             >
@@ -133,7 +151,7 @@
             </CssObject>
         {:else if option.type === "navigation"}
             <CssObject position={positions[i]}
-                       center={option.center}
+                       center={[0, 0, 0]}
                        rotation={rotations[i]}
                        pointerEvents={true}
                        threeD={true}
@@ -160,9 +178,9 @@
         <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
         <Checkbox bind:value={grid} label="Grid"/>
         <Wheel bind:value={cameraFov} format={(v) => `${v}°`} label="Camera FOV" step={1}/>
-        {#each sceneData.options as _, i (i)}
-            <Folder title={sceneData.options[i].text} expanded={false}>
-                {#if sceneData.options[i].type === "navigation"}
+        {#each _sceneData.options as _, i (i)}
+            <Folder title={_sceneData.options[i].text} expanded={false}>
+                {#if _sceneData.options[i].type === "navigation"}
                     <RotationEuler bind:value={rotations[i]}
                                    expanded={false}
                                    label="Rotation"
@@ -175,11 +193,50 @@
                        picker="inline"
                        userExpandable={false}
                 />
+                <Button title="Delete" on:click={() => {
+                    _sceneData.options = _sceneData.options.filter((_, j) => j !== i);
+                    positions = positions.filter((_, j) => j !== i);
+                    rotations = rotations.filter((_, j) => j !== i);
+                }}/>
             </Folder>
         {/each}
         <Folder title="Add option" expanded={false}>
-            <Text value="Not implemented" disabled/>
-            <RadioGrid values={["Popup", "Navigation"]}/>
+            <Text value="Not finished" disabled/>
+            <RadioGrid bind:value={newType} values={["Popup", "Navigation"]}/>
+            {#if newType === "Popup"}
+                <Text label="Name" bind:value={newText}/>
+                <Checkbox label="Rounded" bind:value={newRounded}/>
+                <Checkbox label="Animated" bind:value={newAnimated}/>
+            {:else if newType === "Navigation"}
+                <Text label="Name" bind:value={newText}/>
+                <Text label="Next scene id" bind:value={newNextId}/>
+                <Checkbox label="Animated" bind:value={newAnimated}/>
+            {/if}
+            <Button title="Add" on:click={() => {
+                if (newType === "Popup") {
+                    _sceneData.options = [..._sceneData.options, {
+                        type: "popup",
+                        text: newText,
+                        rounded: newRounded,
+                        animated: newAnimated,
+                        position: [0, 0, 0],
+                        rotation: [0, 0, 0]
+                    }];
+                    positions.push([0, 0, 0]);
+                    rotations.push([0, 0, 0]);
+                } else if (newType === "Navigation" && !isNaN(parseInt(newNextId))) {
+                    _sceneData.options = [..._sceneData.options, {
+                        type: "navigation",
+                        text: newText,
+                        nextSceneId: parseInt(newNextId),
+                        animated: newAnimated,
+                        position: [0, 0, 0],
+                        rotation: [0, 0, 0]
+                    }];
+                    positions.push([0, 0, 0]);
+                    rotations.push([0, 0, 0]);
+                }
+            }}/>
         </Folder>
         <Folder title="Add scene" expanded={false}>
             <Text value="Not implemented" disabled/>
@@ -206,5 +263,6 @@
                 });
             }}/>
         </Folder>
+        <Button title="Save" on:click={save}/>
     </Pane>
 {/if}
