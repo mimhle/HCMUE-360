@@ -17,6 +17,7 @@
         Wheel
     } from "svelte-tweakpane-ui";
     import { getAllScenes, getScene, updateScene } from "$lib/db_test.js";
+    import { easeOutExpo } from "$lib/utils.js";
 
     interactivity();
 
@@ -25,12 +26,17 @@
 
     let _sceneData;
 
+    let transition_d = 0;
+    let sourceVector = null;
+    let destinationVector = null;
+    let afterTransition = null;
+
     let lighting = Math.PI;
     let grid = true;
     let wireframe = false;
-    let cameraPosX = 1;
+    let cameraPosX = 0;
     let cameraPosY = 0;
-    let cameraPosZ = 0;
+    let cameraPosZ = 1;
     let sphereRadius = 100;
     let sphereSegmentsW = 48;
     let sphereSegmentsH = 48;
@@ -60,7 +66,26 @@
     $: css2DRenderer.setSize($size.width, $size.height);
     $: css3DRenderer.setSize($size.width, $size.height);
     scene.matrixWorldAutoUpdate = false;
-    useTask(() => {
+    useTask((delta) => {
+        if (transition_d > 0 && transition_d < 1) {
+            const dist = new THREE.Vector3().subVectors(destinationVector, sourceVector);
+            if (dist.length() < 0.07) {
+                transition_d = 1;
+            } else {
+                transition_d += delta;
+                const ease = easeOutExpo(transition_d);
+                camera.current.position.x = sourceVector.x + (destinationVector.x - sourceVector.x) * ease;
+                camera.current.position.y = sourceVector.y + (destinationVector.y - sourceVector.y) * ease;
+                camera.current.position.z = sourceVector.z + (destinationVector.z - sourceVector.z) * ease;
+                cameraControlRef.update();
+            }
+        } else if (transition_d >= 1) {
+            transition_d = 0;
+            if (afterTransition) {
+                afterTransition();
+                afterTransition = null;
+            }
+        }
         scene.updateMatrixWorld();
     }, { before: autoRenderTask });
     useTask(() => {
@@ -78,17 +103,21 @@
 
         document.addEventListener("wheel", (e) => {
             if (e.target.tagName === "CANVAS") {
-                if (cameraRef !== null) {
-                    const min = 10;
-                    const max = 60;
-                    camera.current.fov += e.deltaY * 0.008;
-                    camera.current.fov = Math.max(min, Math.min(max, camera.current.fov));
-                    // TODO: scale speed with fov
-                    cameraRef.updateProjectionMatrix();
-                }
+                zoom(e.deltaY);
             }
         });
     });
+
+    const zoom = (delta) => {
+        if (cameraRef !== null) {
+            const min = 10;
+            const max = 60;
+            camera.current.fov += delta * 0.008;
+            camera.current.fov = Math.max(min, Math.min(max, camera.current.fov));
+            // TODO: scale speed with fov
+            cameraRef.updateProjectionMatrix();
+        }
+    };
 
     const processSceneData = (data) => {
         if (data) {
@@ -104,6 +133,13 @@
                 newNextId = allScene[Object.keys(allScene)[0]];
             });
         }
+    };
+
+    const transitionNextScene = (newPos, after) => {
+        sourceVector = new THREE.Vector3(camera.current.position.x, camera.current.position.y, camera.current.position.z);
+        destinationVector = newPos;
+        transition_d = 0.01;
+        afterTransition = after;
     };
 
     const save = () => {
@@ -170,7 +206,17 @@
                        pointerEvents={true}
             >
                 <div class="bg-surface text-white -translate-x-1/2 {option.rounded ? `rounded-full` : ``} {option.animated ? `animate-pulse-btn` : ``}">
-                    <button class="p-2" on:click={() => alert("button clicked")}>
+                    <button class="p-2 overflow-hidden" on:click={() =>{
+                        const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
+                        newVector.normalize();
+                        newVector.negate();
+
+                        transitionNextScene(newVector, () => {
+                            alert("button clicked");
+                        });
+                    }} on:wheel={(e) => {
+                        zoom(e.deltaY);
+                    }}>
                         {option.text}
                     </button>
                 </div>
@@ -184,20 +230,16 @@
             >
                 <div class="bg-transparent text-white {option.animated ? `animate-bounce` : ``}">
                     <button class="p-2" on:click={() => {
-                        // TODO: point the camera at the button
-                        // const spherical = new THREE.Spherical();
-                        // spherical.setFromCartesianCoords(...positions[i]);
-                        // console.log(spherical);
-                        // cameraControlRef.maxPolarAngle = spherical.phi;
-                        // cameraControlRef.minPolarAngle = spherical.phi;
-                        // cameraControlRef.maxAzimuthAngle = spherical.theta;
-                        // cameraControlRef.minAzimuthAngle = spherical.theta;
-                        // cameraControlRef.maxDistance = spherical.radius;
-                        // cameraControlRef.minDistance = spherical.radius;
-                        // cameraControlRef.update();
-                        // setTimeout(() => {
-                        sceneData = getScene(option.nextSceneId);
-                        // }, 1000);
+                        const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
+                        newVector.normalize();
+                        newVector.negate();
+                        newVector.y = 0;
+
+                        transitionNextScene(newVector, () => {
+                            sceneData = getScene(option.nextSceneId);
+                        });
+                    }} on:wheel={(e) => {
+                        zoom(e.deltaY);
                     }}>
                         <i class="fa fa-chevron-down fa-lg"></i>
                     </button>
