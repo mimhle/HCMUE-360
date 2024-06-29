@@ -1,38 +1,29 @@
-# create-svelte
+# Đề tài nghiên cứu khoa học
+## Ứng dụng công nghệ thực tế ảo VR360 trong xây dựng bản đồ tham quan Trường Đại học Sư phạm Thành phố Hồ Chí Minh
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+### 1. Giảng viên hướng dẫn:
+- ...
 
-## Creating a project
+### 2. Sinh viên thực hiện:
+- Nguyễn Ngọc Yến Vy (MSSV: ...)
+- Thái Phúc Tiến (MSSV: ...)
+- Lê Ngọc Minh (MSSV: ...)
 
-If you're seeing this, you've probably already done this step. Congrats!
+### 3. Mô tả đề tài:
+- ...
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+### 4. Mục tiêu đề tài:
+- ...
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+### 5. Công nghệ sử dụng:
+- SvelteKit, Threlte (Three.js + Svelte), ...
+- ...
 
-## Developing
+### 6. Kết quả dự kiến:
+- ...
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+### 7. Hướng phát triển:
+- ...
 
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+### 8. Tài liệu tham khảo:
+- ...
