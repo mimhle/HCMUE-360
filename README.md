@@ -5,9 +5,9 @@
 - ...
 
 ### 2. Sinh viên thực hiện:
-- Nguyễn Ngọc Yến Vy (MSSV: ...)
-- Thái Phúc Tiến (MSSV: ...)
-- Lê Ngọc Minh (MSSV: ...)
+- Nguyễn Ngọc Yến Vy (MSSV: ...) Khoa Địa lý - Nhóm trưởng
+- Thái Phúc Tiến (MSSV: ...) Khoa CNTT
+- Lê Ngọc Minh (MSSV: ...) Khoa CNTT
 
 ### 3. Mô tả đề tài:
 - ...
