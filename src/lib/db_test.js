@@ -1,4 +1,7 @@
-const DB = [
+import { persisted } from "svelte-persisted-store";
+import { get } from "svelte/store";
+
+const _DB = [
     {
         id: 1,
         name: "scene1",
@@ -27,7 +30,7 @@ const DB = [
                 text: "option3",
                 type: "navigation",
                 position: [-120, -30, 0],
-                rotation: [-0.5*Math.PI, Math.PI, 0.5*Math.PI],
+                rotation: [-0.5 * Math.PI, Math.PI, 0.5 * Math.PI],
                 animated: true,
                 nextSceneId: 2,
             }
@@ -61,7 +64,7 @@ const DB = [
                 text: "option3",
                 type: "navigation",
                 position: [120, -30, 0],
-                rotation: [-0.5*Math.PI, Math.PI, 0.5*Math.PI],
+                rotation: [-0.5 * Math.PI, Math.PI, 0.5 * Math.PI],
                 animated: true,
                 nextSceneId: 1,
             }
@@ -69,12 +72,20 @@ const DB = [
     }
 ];
 
+const DB = persisted("db_test", _DB);
 
 export const getScene = (sceneId) => {
-    return JSON.parse(JSON.stringify(DB.find(scene => scene.id === sceneId)));
+    return JSON.parse(JSON.stringify(get(DB).find(scene => scene.id === sceneId)));
 };
 
 export const updateScene = (sceneId, scene) => {
-    const index = DB.findIndex(scene => scene.id === sceneId);
-    DB[index] = scene;
-}
+    const index = get(DB).findIndex(scene => scene.id === sceneId);
+    DB.update(db => {
+        db[index] = scene;
+        return db;
+    });
+};
+
+export const getAllScenes = () => {
+    return get(DB).map(scene => [scene.id, scene.name]);
+};

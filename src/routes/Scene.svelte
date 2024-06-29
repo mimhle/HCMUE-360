@@ -9,14 +9,14 @@
     import {
         Button,
         Checkbox,
-        Element, Folder,
+        Element, Folder, List,
         Pane, Point, RadioGrid,
         RotationEuler, Separator,
         Slider, Text,
         ThemeUtils,
         Wheel
     } from "svelte-tweakpane-ui";
-    import { getScene, updateScene } from "$lib/db_test.js";
+    import { getAllScenes, getScene, updateScene } from "$lib/db_test.js";
 
     interactivity();
 
@@ -38,9 +38,10 @@
 
     let newType = "Popup";
     let newText = "";
-    let newNextId = "";
+    let newNextId = 1;
     let newAnimated = true;
     let newRounded = true;
+    let allScene = {};
 
     let positions = [];
     let rotations = [];
@@ -84,6 +85,8 @@
                 positions = data.options.map(option => option.position);
                 rotations = data.options.map(option => option.rotation);
                 _sceneData = sceneData;
+                allScene = Object.fromEntries(getAllScenes().filter(scene => scene[0] !== _sceneData.id).map(scene => [`${scene[1]} (${scene[0]})`, scene[0]]));
+                newNextId = allScene[Object.keys(allScene)[0]];
             });
         }
     };
@@ -201,7 +204,6 @@
             </Folder>
         {/each}
         <Folder title="Add option" expanded={false}>
-            <Text value="Not finished" disabled/>
             <RadioGrid bind:value={newType} values={["Popup", "Navigation"]}/>
             {#if newType === "Popup"}
                 <Text label="Name" bind:value={newText}/>
@@ -209,10 +211,11 @@
                 <Checkbox label="Animated" bind:value={newAnimated}/>
             {:else if newType === "Navigation"}
                 <Text label="Name" bind:value={newText}/>
-                <Text label="Next scene id" bind:value={newNextId}/>
+                <List label="Next scene" bind:value={newNextId} options={allScene}/>
                 <Checkbox label="Animated" bind:value={newAnimated}/>
             {/if}
             <Button title="Add" on:click={() => {
+                if (newText === "") return;
                 if (newType === "Popup") {
                     _sceneData.options = [..._sceneData.options, {
                         type: "popup",
@@ -224,11 +227,11 @@
                     }];
                     positions.push([0, 0, 0]);
                     rotations.push([0, 0, 0]);
-                } else if (newType === "Navigation" && !isNaN(parseInt(newNextId))) {
+                } else if (newType === "Navigation") {
                     _sceneData.options = [..._sceneData.options, {
                         type: "navigation",
                         text: newText,
-                        nextSceneId: parseInt(newNextId),
+                        nextSceneId: newNextId,
                         animated: newAnimated,
                         position: [0, 0, 0],
                         rotation: [0, 0, 0]
