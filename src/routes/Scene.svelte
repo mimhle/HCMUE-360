@@ -27,14 +27,15 @@
 
     let lighting = Math.PI;
     let grid = true;
+    let wireframe = false;
     let cameraPosX = 1;
     let cameraPosY = 0;
     let cameraPosZ = 0;
-    let cameraFov = 60;
     let sphereRadius = 100;
     let sphereSegmentsW = 48;
     let sphereSegmentsH = 48;
     let cameraRef = null;
+    let cameraControlRef = null;
 
     let newType = "Popup";
     let newText = "";
@@ -74,6 +75,19 @@
         if (window.innerWidth < 768) {
             rotateSpeed = -0.7;
         }
+
+        document.addEventListener("wheel", (e) => {
+            if (e.target.tagName === "CANVAS") {
+                if (cameraRef !== null) {
+                    const min = 10;
+                    const max = 60;
+                    camera.current.fov += e.deltaY * 0.008;
+                    camera.current.fov = Math.max(min, Math.min(max, camera.current.fov));
+                    // TODO: scale speed with fov
+                    cameraRef.updateProjectionMatrix();
+                }
+            }
+        });
     });
 
     const processSceneData = (data) => {
@@ -85,6 +99,7 @@
                 positions = data.options.map(option => option.position);
                 rotations = data.options.map(option => option.rotation);
                 _sceneData = sceneData;
+                if (cameraControlRef) cameraControlRef.cursor = new THREE.Vector3(0, 0, 0);
                 allScene = Object.fromEntries(getAllScenes().filter(scene => scene[0] !== _sceneData.id).map(scene => [`${scene[1]} (${scene[0]})`, scene[0]]));
                 newNextId = allScene[Object.keys(allScene)[0]];
             });
@@ -110,12 +125,16 @@
 <T.PerspectiveCamera
         makeDefault
         position={[cameraPosX, cameraPosY, cameraPosZ]}
-        fov={cameraFov}
+        fov={60}
         near={1}
         far={1000}
         bind:ref={cameraRef}
 >
-    <OrbitControls enableDamping rotateSpeed={rotateSpeed} enablePan={false} enableZoom={false}/>
+    <OrbitControls enableDamping
+                   rotateSpeed={rotateSpeed}
+                   enablePan={false}
+                   enableZoom={false}
+                   bind:ref={cameraControlRef}/>
 </T.PerspectiveCamera>
 
 <T.AmbientLight intensity={lighting}/>
@@ -129,7 +148,11 @@
 <T.Mesh scale.x={-1}>
     <T.SphereGeometry args={[sphereRadius, sphereSegmentsW, sphereSegmentsH]}/>
     {#if texture}
-        <T.MeshStandardMaterial map={texture} side={THREE.BackSide} toneMapped={false}/>
+        {#if wireframe}
+            <T.MeshBasicMaterial color={0x000000} wireframe={true} side={THREE.BackSide}/>
+        {:else}
+            <T.MeshStandardMaterial map={texture} side={THREE.BackSide} toneMapped={false}/>
+        {/if}
     {/if}
 </T.Mesh>
 
@@ -160,8 +183,21 @@
                        threeD={true}
             >
                 <div class="bg-transparent text-white {option.animated ? `animate-bounce` : ``}">
-                    <button class="p-2" on:click={() =>{
+                    <button class="p-2" on:click={() => {
+                        // TODO: point the camera at the button
+                        // const spherical = new THREE.Spherical();
+                        // spherical.setFromCartesianCoords(...positions[i]);
+                        // console.log(spherical);
+                        // cameraControlRef.maxPolarAngle = spherical.phi;
+                        // cameraControlRef.minPolarAngle = spherical.phi;
+                        // cameraControlRef.maxAzimuthAngle = spherical.theta;
+                        // cameraControlRef.minAzimuthAngle = spherical.theta;
+                        // cameraControlRef.maxDistance = spherical.radius;
+                        // cameraControlRef.minDistance = spherical.radius;
+                        // cameraControlRef.update();
+                        // setTimeout(() => {
                         sceneData = getScene(option.nextSceneId);
+                        // }, 1000);
                     }}>
                         <i class="fa fa-chevron-down fa-lg"></i>
                     </button>
@@ -174,14 +210,16 @@
             theme={ThemeUtils.presets.light}
             position="fixed"
             title="test"
+            width={270}
     >
         <Checkbox bind:value={perf} label="Performance"/>
+        <Wheel label="Camera offset" step={1} bind:value={cameraPosX}/>
         <Wheel label="Segments W" min={0} max={120} step={1} bind:value={sphereSegmentsW}/>
         <Wheel label="Segments H" min={0} max={120} step={1} bind:value={sphereSegmentsH}/>
         <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
         <Checkbox bind:value={grid} label="Grid"/>
-        <Wheel bind:value={cameraFov} format={(v) => `${v}°`} label="Camera FOV" step={1}/>
-        {#each _sceneData.options as _, i (i)}
+        <Checkbox bind:value={wireframe} label="Wireframe"/>
+        {#each _sceneData.options as option, i (`${i}_${option.text}`)}
             <Folder title={_sceneData.options[i].text} expanded={false}>
                 {#if _sceneData.options[i].type === "navigation"}
                     <RotationEuler bind:value={rotations[i]}
@@ -223,7 +261,8 @@
                         rounded: newRounded,
                         animated: newAnimated,
                         position: [0, 0, 0],
-                        rotation: [0, 0, 0]
+                        rotation: [0, 0, 0],
+                        popupText: ""
                     }];
                     positions.push([0, 0, 0]);
                     rotations.push([0, 0, 0]);

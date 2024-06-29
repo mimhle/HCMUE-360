@@ -8,6 +8,23 @@
         --color-secondary: 111, 114, 185;
         --color-surface: 120, 120, 120;
     }
+
+    ::-webkit-scrollbar {
+        width: 0;
+        height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #BDBDBD;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #6E6E6E;
+    }
 }
 
 @keyframes pulse-btn {
@@ -28,5 +45,6 @@
 /* svelte-tweakpane-ui pane*/
 .svelte-tweakpane-ui {
     max-height: 97vh;
-    overflow: scroll;
+    overflow-y: scroll;
+    scrollbar-gutter: auto;
 }
