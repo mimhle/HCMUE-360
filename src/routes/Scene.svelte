@@ -34,9 +34,7 @@
     let lighting = Math.PI;
     let grid = true;
     let wireframe = false;
-    let cameraPosX = 0;
-    let cameraPosY = 0;
-    let cameraPosZ = 1;
+    let cameraOffset = 1;
     let sphereRadius = 100;
     let sphereSegmentsW = 48;
     let sphereSegmentsH = 48;
@@ -101,12 +99,27 @@
             rotateSpeed = -0.7;
         }
 
+        camera.current.position.z = cameraOffset;
+        cameraControlRef.update();
+
         document.addEventListener("wheel", (e) => {
             if (e.target.tagName === "CANVAS") {
                 zoom(e.deltaY);
             }
         });
     });
+
+    $: {
+        if (cameraOffset && cameraRef !== null) {
+            const curr = new THREE.Vector3(camera.current.position.x, camera.current.position.y, camera.current.position.z);
+            curr.normalize();
+            curr.multiplyScalar(cameraOffset);
+            camera.current.position.x = curr.x;
+            camera.current.position.y = curr.y;
+            camera.current.position.z = curr.z;
+            cameraControlRef.update();
+        }
+    }
 
     const zoom = (delta) => {
         if (cameraRef !== null) {
@@ -160,7 +173,6 @@
 
 <T.PerspectiveCamera
         makeDefault
-        position={[cameraPosX, cameraPosY, cameraPosZ]}
         fov={60}
         near={1}
         far={1000}
@@ -255,7 +267,7 @@
             width={270}
     >
         <Checkbox bind:value={perf} label="Performance"/>
-        <Wheel label="Camera offset" step={1} bind:value={cameraPosX}/>
+        <Wheel label="Camera offset" step={1} bind:value={cameraOffset}/>
         <Wheel label="Segments W" min={0} max={120} step={1} bind:value={sphereSegmentsW}/>
         <Wheel label="Segments H" min={0} max={120} step={1} bind:value={sphereSegmentsH}/>
         <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
