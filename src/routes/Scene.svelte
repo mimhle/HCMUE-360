@@ -51,6 +51,7 @@
     let allScene = {};
 
     let positions = [];
+    let positionsPolar = [];
     let rotations = [];
     let optionsDisabled = true;
 
@@ -75,7 +76,6 @@
                 transition_d = max;
             } else {
                 transition_d += initLoad ? delta / 3 : delta;
-                console.log(transition_d, delta);
                 const ease = easeOutExpo(transition_d);
                 camera.current.position.lerpVectors(sourceVector, destinationVector, ease);
                 cameraControlRef.update();
@@ -130,6 +130,18 @@
         processSceneData(sceneData);
     }
 
+    $: if (positionsPolar.length > 0) {
+        setPositions(positionsPolar);
+    }
+
+    const setPositions = (positionsPolar) => {
+        positions = positionsPolar.map(polar => {
+            const spherical = new THREE.Spherical(100, polar[1], polar[0]);
+            const result =  new THREE.Vector3().setFromSpherical(spherical);
+            return [result.x, result.y, result.z];
+        });
+    };
+
     const zoom = (delta) => {
         if (cameraRef !== null) {
             const min = 10;
@@ -148,7 +160,10 @@
             new THREE.TextureLoader().load(data.image, (t) => {
                 texture = t;
                 texture.colorSpace = THREE.SRGBColorSpace;
-                positions = data.options.map(option => option.position);
+                positionsPolar = data.options.map(option => {
+                    const spherical = new THREE.Spherical().setFromCartesianCoords(option.position[0], option.position[1], option.position[2]);
+                    return [spherical.theta, spherical.phi];
+                });
                 rotations = data.options.map(option => option.rotation);
                 _sceneData = sceneData;
                 allScene = Object.fromEntries(getAllScenes().filter(scene => scene[0] !== _sceneData.id).map(scene => [`${scene[1]} (${scene[0]})`, scene[0]]));
@@ -317,11 +332,14 @@
                                    picker={'inline'}
                     />
                 {/if}
-                <Point bind:value={positions[i]}
-                       expanded={false}
+                <Point bind:value={positionsPolar[i]}
+                       expanded={true}
                        label="Position"
                        picker="inline"
-                       userExpandable={false}
+                       min={-Math.PI}
+                       max={Math.PI}
+                       step={0.01}
+                       userExpandable={true}
                 />
                 <Button title="Delete" on:click={() => {
                     _sceneData.options = _sceneData.options.filter((_, j) => j !== i);
