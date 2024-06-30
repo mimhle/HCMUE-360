@@ -26,6 +26,8 @@
 
     let _sceneData;
 
+    let initLoad = true;
+
     let transition_d = 0;
     let sourceVector = null;
     let destinationVector = null;
@@ -50,6 +52,7 @@
 
     let positions = [];
     let rotations = [];
+    let optionsDisabled = true;
 
     let imgUrl = "";
 
@@ -65,19 +68,19 @@
     $: css3DRenderer.setSize($size.width, $size.height);
     scene.matrixWorldAutoUpdate = false;
     useTask((delta) => {
-        if (transition_d > 0 && transition_d < 1) {
+        const max = 1;
+        if (transition_d > 0 && transition_d < max) {
             const dist = new THREE.Vector3().subVectors(destinationVector, sourceVector);
             if (dist.length() < 0.07) {
-                transition_d = 1;
+                transition_d = max;
             } else {
-                transition_d += delta;
+                transition_d += initLoad ? delta / 3 : delta;
+                console.log(transition_d, delta);
                 const ease = easeOutExpo(transition_d);
-                camera.current.position.x = sourceVector.x + (destinationVector.x - sourceVector.x) * ease;
-                camera.current.position.y = sourceVector.y + (destinationVector.y - sourceVector.y) * ease;
-                camera.current.position.z = sourceVector.z + (destinationVector.z - sourceVector.z) * ease;
+                camera.current.position.lerpVectors(sourceVector, destinationVector, ease);
                 cameraControlRef.update();
             }
-        } else if (transition_d >= 1) {
+        } else if (transition_d >= max) {
             transition_d = 0;
             if (afterTransition) {
                 afterTransition();
@@ -99,8 +102,12 @@
             rotateSpeed = -0.7;
         }
 
-        camera.current.position.z = cameraOffset;
-        cameraControlRef.update();
+        if (initLoad) {
+            camera.current.position.set(0, 300, 0);
+            cameraControlRef.update();
+        } else {
+            resetCamera();
+        }
 
         document.addEventListener("wheel", (e) => {
             if (e.target.tagName === "CANVAS") {
@@ -110,15 +117,17 @@
     });
 
     $: {
-        if (cameraOffset && cameraRef !== null) {
-            const curr = new THREE.Vector3(camera.current.position.x, camera.current.position.y, camera.current.position.z);
+        if (cameraOffset && cameraRef !== null && !initLoad) {
+            const curr = camera.current.position.clone();
             curr.normalize();
             curr.multiplyScalar(cameraOffset);
-            camera.current.position.x = curr.x;
-            camera.current.position.y = curr.y;
-            camera.current.position.z = curr.z;
+            camera.current.position.set(curr.x, curr.y, curr.z);
             cameraControlRef.update();
         }
+    }
+
+    $: if (sceneData) {
+        processSceneData(sceneData);
     }
 
     const zoom = (delta) => {
@@ -135,21 +144,33 @@
     const processSceneData = (data) => {
         if (data) {
             texture = null;
+            disableControl();
             new THREE.TextureLoader().load(data.image, (t) => {
                 texture = t;
                 texture.colorSpace = THREE.SRGBColorSpace;
                 positions = data.options.map(option => option.position);
                 rotations = data.options.map(option => option.rotation);
                 _sceneData = sceneData;
-                if (cameraControlRef) cameraControlRef.cursor = new THREE.Vector3(0, 0, 0);
                 allScene = Object.fromEntries(getAllScenes().filter(scene => scene[0] !== _sceneData.id).map(scene => [`${scene[1]} (${scene[0]})`, scene[0]]));
                 newNextId = allScene[Object.keys(allScene)[0]];
+
+                if (initLoad) {
+                    setTimeout(() => {
+                        moveCamera(new THREE.Vector3(0, 0, 1), () => {
+                            initLoad = false;
+                            enableControl();
+                        });
+                    }, 1500);
+                } else {
+                    resetCamera();
+                    enableControl();
+                }
             });
         }
     };
 
-    const transitionNextScene = (newPos, after) => {
-        sourceVector = new THREE.Vector3(camera.current.position.x, camera.current.position.y, camera.current.position.z);
+    const moveCamera = (newPos, after) => {
+        sourceVector = camera.current.position.clone();
         destinationVector = newPos;
         transition_d = 0.01;
         afterTransition = after;
@@ -164,9 +185,20 @@
         updateScene(_sceneData.id, sceneData);
     };
 
-    $: if (sceneData) {
-        processSceneData(sceneData);
-    }
+    const resetCamera = () => {
+        camera.current.position.set(0, 0, cameraOffset);
+        cameraControlRef.update();
+    };
+
+    const disableControl = () => {
+        optionsDisabled = true;
+        if (cameraControlRef) cameraControlRef.enabled = false;
+    };
+
+    const enableControl = () => {
+        optionsDisabled = false;
+        if (cameraControlRef) cameraControlRef.enabled = true;
+    };
 
 
 </script>
@@ -182,6 +214,7 @@
                    rotateSpeed={rotateSpeed}
                    enablePan={false}
                    enableZoom={false}
+                   enabled={false}
                    bind:ref={cameraControlRef}/>
 </T.PerspectiveCamera>
 
@@ -210,55 +243,57 @@
         <T.PolarGridHelper args={[20, 16, 20, 16]}/>
     {/if}
 
-    {#each _sceneData.options as option, i (i)}
-        {#if option.type === "popup"}
-            <CssObject position={positions[i]}
-                       center={[0, 0]}
-                       rotation={rotations[i]}
-                       pointerEvents={true}
-            >
-                <div class="bg-surface text-white -translate-x-1/2 {option.rounded ? `rounded-full` : ``} {option.animated ? `animate-pulse-btn` : ``}">
-                    <button class="p-2 overflow-hidden" on:click={() =>{
-                        const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
-                        newVector.normalize();
-                        newVector.negate();
+    {#if !optionsDisabled}
+        {#each _sceneData.options as option, i (i)}
+            {#if option.type === "popup"}
+                <CssObject position={positions[i]}
+                           center={[0, 0]}
+                           rotation={rotations[i]}
+                           pointerEvents={true}
+                >
+                    <div class="bg-surface text-white -translate-x-1/2 {option.rounded ? `rounded-full` : ``} {option.animated ? `animate-pulse-btn` : ``}">
+                        <button class="p-2 overflow-hidden" on:click={() =>{
+                            const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
+                            newVector.normalize();
+                            newVector.negate();
 
-                        transitionNextScene(newVector, () => {
-                            alert("button clicked");
-                        });
-                    }} on:wheel={(e) => {
-                        zoom(e.deltaY);
-                    }}>
-                        {option.text}
-                    </button>
-                </div>
-            </CssObject>
-        {:else if option.type === "navigation"}
-            <CssObject position={positions[i]}
-                       center={[0, 0, 0]}
-                       rotation={rotations[i]}
-                       pointerEvents={true}
-                       threeD={true}
-            >
-                <div class="bg-transparent text-white {option.animated ? `animate-bounce` : ``}">
-                    <button class="p-2" on:click={() => {
-                        const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
-                        newVector.normalize();
-                        newVector.negate();
-                        newVector.y = 0;
+                            moveCamera(newVector, () => {
+                                alert("button clicked");
+                            });
+                        }} on:wheel={(e) => {
+                            zoom(e.deltaY);
+                        }}>
+                            {option.text}
+                        </button>
+                    </div>
+                </CssObject>
+            {:else if option.type === "navigation"}
+                <CssObject position={positions[i]}
+                           center={[0, 0, 0]}
+                           rotation={rotations[i]}
+                           pointerEvents={true}
+                           threeD={true}
+                >
+                    <div class="bg-transparent text-white {option.animated ? `animate-bounce` : ``}">
+                        <button class="p-2" on:click={() => {
+                            const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
+                            newVector.normalize();
+                            newVector.negate();
+                            newVector.y = 0;
 
-                        transitionNextScene(newVector, () => {
-                            sceneData = getScene(option.nextSceneId);
-                        });
-                    }} on:wheel={(e) => {
-                        zoom(e.deltaY);
-                    }}>
-                        <i class="fa fa-chevron-down fa-lg"></i>
-                    </button>
-                </div>
-            </CssObject>
-        {/if}
-    {/each}
+                            moveCamera(newVector, () => {
+                                sceneData = getScene(option.nextSceneId);
+                            });
+                        }} on:wheel={(e) => {
+                            zoom(e.deltaY);
+                        }}>
+                            <i class="fa fa-chevron-down fa-lg"></i>
+                        </button>
+                    </div>
+                </CssObject>
+            {/if}
+        {/each}
+    {/if}
 
     <Pane
             theme={ThemeUtils.presets.light}
