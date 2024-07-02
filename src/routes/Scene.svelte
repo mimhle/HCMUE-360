@@ -16,7 +16,7 @@
         ThemeUtils,
         Wheel
     } from "svelte-tweakpane-ui";
-    import { getScenes, getScene, updateScene, authenticate } from "$lib/api.js";
+    import { getScenes, getScene, updateScene } from "$lib/api.js";
     import { easeOutExpo } from "$lib/utils.js";
 
     interactivity();
@@ -167,9 +167,9 @@
                 rotations = data.options.map(option => option.rotation);
                 _sceneData = sceneData;
                 getScenes().then(scenes => {
-                    allScene = Object.fromEntries(scenes.filter(scene => scene[0] !== _sceneData.id).map(scene => [`${scene[1]} (${scene[0]})`, scene[0]]));
+                    allScene = Object.fromEntries(scenes.filter(scene => scene.id !== _sceneData.id).map(scene => [`${scene.name} (${scene.id})`, scene.id]));
+                    newNextId = allScene[Object.keys(allScene)[0]];
                 });
-                newNextId = allScene[Object.keys(allScene)[0]];
 
                 if (initLoad) {
                     setTimeout(() => {
@@ -199,14 +199,13 @@
             option.rotation = rotations[i];
             return option;
         });
-
-        authenticate("user", localStorage.getItem("password")).then(result => {
-            if (result) {
-                updateScene(_sceneData.id, _sceneData).then(result => {
-                    sceneData = result;
-                });
-            } else {
+        updateScene(_sceneData.id, _sceneData).then(result => {
+            sceneData = result;
+        }).catch(e => {
+            if (e.message === "401") {
                 sceneData = _sceneData;
+            } else {
+                alert(`Error saving scene, error: ${e.message}`);
             }
         });
     };

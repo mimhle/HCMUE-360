@@ -28,8 +28,14 @@ export const updateScene = async (sceneId, scene) => {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
+            "Authorization": localStorage.getItem("password"),
         },
         body: JSON.stringify(scene),
     })
-        .then((response) => response.json());
+        .then((response) => {
+            if (response.status !== 200) {
+                throw new Error(response.status.toString());
+            }
+            return response.json();
+        });
 };
