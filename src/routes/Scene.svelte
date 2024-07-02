@@ -16,7 +16,7 @@
         ThemeUtils,
         Wheel
     } from "svelte-tweakpane-ui";
-    import { getAllScenes, getScene, updateScene } from "$lib/db_test.js";
+    import { getScenes, getScene, updateScene, authenticate } from "$lib/api.js";
     import { easeOutExpo } from "$lib/utils.js";
 
     interactivity();
@@ -137,7 +137,7 @@
     const setPositions = (positionsPolar) => {
         positions = positionsPolar.map(polar => {
             const spherical = new THREE.Spherical(100, polar[1], polar[0]);
-            const result =  new THREE.Vector3().setFromSpherical(spherical);
+            const result = new THREE.Vector3().setFromSpherical(spherical);
             return [result.x, result.y, result.z];
         });
     };
@@ -166,7 +166,9 @@
                 });
                 rotations = data.options.map(option => option.rotation);
                 _sceneData = sceneData;
-                allScene = Object.fromEntries(getAllScenes().filter(scene => scene[0] !== _sceneData.id).map(scene => [`${scene[1]} (${scene[0]})`, scene[0]]));
+                getScenes().then(scenes => {
+                    allScene = Object.fromEntries(scenes.filter(scene => scene[0] !== _sceneData.id).map(scene => [`${scene[1]} (${scene[0]})`, scene[0]]));
+                });
                 newNextId = allScene[Object.keys(allScene)[0]];
 
                 if (initLoad) {
@@ -192,12 +194,21 @@
     };
 
     const save = () => {
-        sceneData.options = _sceneData.options.map((option, i) => {
+        _sceneData.options = _sceneData.options.map((option, i) => {
             option.position = positions[i];
             option.rotation = rotations[i];
             return option;
         });
-        updateScene(_sceneData.id, sceneData);
+
+        authenticate("user", localStorage.getItem("password")).then(result => {
+            if (result) {
+                updateScene(_sceneData.id, _sceneData).then(result => {
+                    sceneData = result;
+                });
+            } else {
+                sceneData = _sceneData;
+            }
+        });
     };
 
     const resetCamera = () => {
@@ -297,7 +308,9 @@
                             newVector.y = 0;
 
                             moveCamera(newVector, () => {
-                                sceneData = getScene(option.nextSceneId);
+                                getScene(option.nextSceneId).then(result => {
+                                    sceneData = result;
+                                });
                             });
                         }} on:wheel={(e) => {
                             zoom(e.deltaY);
@@ -344,6 +357,7 @@
                 <Button title="Delete" on:click={() => {
                     _sceneData.options = _sceneData.options.filter((_, j) => j !== i);
                     positions = positions.filter((_, j) => j !== i);
+                    positionsPolar = positionsPolar.filter((_, j) => j !== i);
                     rotations = rotations.filter((_, j) => j !== i);
                 }}/>
             </Folder>
@@ -372,6 +386,7 @@
                         popupText: ""
                     }];
                     positions.push([0, 0, 0]);
+                    positionsPolar = [...positionsPolar, [0, 0]]
                     rotations.push([0, 0, 0]);
                 } else if (newType === "Navigation") {
                     _sceneData.options = [..._sceneData.options, {
@@ -383,6 +398,7 @@
                         rotation: [0, 0, 0]
                     }];
                     positions.push([0, 0, 0]);
+                    positionsPolar = [...positionsPolar, [0, 0]]
                     rotations.push([0, 0, 0]);
                 }
             }}/>

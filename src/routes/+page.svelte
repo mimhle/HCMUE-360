@@ -2,16 +2,14 @@
     import { Canvas } from "@threlte/core";
     import Scene from "./Scene.svelte";
     import { onMount } from "svelte";
-    import { getScene } from "$lib/db_test.js";
+    import { getScene } from "$lib/api.js";
     import * as THREE from "three";
     import { PerfMonitor } from "@threlte/extras";
 
     let height = 0;
-    let scene;
     let perf = true;
     onMount(() => {
         height = window.innerHeight;
-        scene = getScene(1);
     })
 </script>
 
@@ -23,11 +21,11 @@
 
 <div style={`height: ${height}px;`}>
     <Canvas toneMapping={THREE.NoToneMapping}>
-        {#if scene}
+        {#await getScene(1) then scene}
             {#if perf}
                 <PerfMonitor />
             {/if}
             <Scene sceneData={scene} bind:perf/>
-        {/if}
+        {/await}
     </Canvas>
 </div>
