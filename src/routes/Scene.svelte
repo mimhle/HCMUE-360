@@ -155,7 +155,6 @@
 
     const processSceneData = (data) => {
         if (data) {
-            texture = null;
             disableControl();
             new THREE.TextureLoader().load(data.image, (t) => {
                 texture = t;
@@ -307,6 +306,7 @@
                             newVector.y = 0;
 
                             moveCamera(newVector, () => {
+                                texture = null;
                                 getScene(option.nextSceneId).then(result => {
                                     sceneData = result;
                                 });
