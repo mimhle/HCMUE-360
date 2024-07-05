@@ -23,9 +23,9 @@ export const getScenes = async () => {
         .then((response) => response.json());
 };
 
-export const updateScene = async (sceneId, scene) => {
+export const updateScene = async (sceneId, scene, _delete = false) => {
     return await fetch(`${API_ENDPOINT}/scenes/${sceneId}`, {
-        method: "PUT",
+        method: _delete ? "DELETE" : "PUT",
         headers: {
             "Content-Type": "application/json",
             "Authorization": localStorage.getItem("password"),
