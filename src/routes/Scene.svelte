@@ -427,7 +427,7 @@
                 }}/>
             </Folder>
         </Folder>
-        <Folder title="Scenes" expanded={true}>
+        <Folder title="Scenes" expanded={false}>
             {#if allScene.length}
                 {#each allScene as [_, id, name, desc], i (`${id}_${_}_${i}}`)}
                     <Folder title={name} expanded={false}>
@@ -470,6 +470,7 @@
                         options: []
                     };
                     addScene(newScene).then(result => {
+                        // FIXME: allScene is not updated
                         allScene = [...allScene, [`${result.name} (${result.id})`, result.id, result.name, result?.description]];
                     }).catch(e => {
                         alert(`Error adding scene, error: ${e.message}`);
