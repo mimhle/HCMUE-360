@@ -46,5 +46,6 @@
 .svelte-tweakpane-ui {
     max-height: 97vh;
     overflow-y: scroll;
+    overflow-x: hidden;
     scrollbar-gutter: auto;
 }

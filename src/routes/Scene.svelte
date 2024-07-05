@@ -170,19 +170,21 @@
                 getScenes().then(scenes => {
                     allScene = Object.fromEntries(scenes.filter(scene => scene.id !== _sceneData.id).map(scene => [`${scene.name} (${scene.id})`, scene.id]));
                     newNextId = allScene[Object.keys(allScene)[0]];
+
+                    if (initLoad) {
+                        setTimeout(() => {
+                            moveCamera(new THREE.Vector3(0, 0, 1), () => {
+                                initLoad = false;
+                                enableControl();
+                            });
+                        }, 100);
+                    } else {
+                        resetCamera();
+                        enableControl();
+                    }
                 });
 
-                if (initLoad) {
-                    setTimeout(() => {
-                        moveCamera(new THREE.Vector3(0, 0, 1), () => {
-                            initLoad = false;
-                            enableControl();
-                        });
-                    }, 1500);
-                } else {
-                    resetCamera();
-                    enableControl();
-                }
+
             });
         }
     };
@@ -200,6 +202,9 @@
             option.rotation = rotations[i];
             return option;
         });
+        texture = null;
+        disableControl();
+        resetCamera();
         updateScene(_sceneData.id, _sceneData).then(result => {
             sceneData = result;
         }).catch(e => {
