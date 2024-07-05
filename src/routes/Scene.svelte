@@ -369,13 +369,13 @@
                            step={0.01}
                            userExpandable={true}
                     />
-                    <ButtonGrid buttons={["Delete", "Look at"]} on:click={e => {
+                    <ButtonGrid buttons={["Delete", "Locate"]} on:click={e => {
                         if (e.detail.label === "Delete") {
                             _sceneData.options = _sceneData.options.filter((_, j) => j !== i);
                             positions = positions.filter((_, j) => j !== i);
                             positionsPolar = positionsPolar.filter((_, j) => j !== i);
                             rotations = rotations.filter((_, j) => j !== i);
-                        } else if (e.detail.label === "Look at") {
+                        } else if (e.detail.label === "Locate") {
                             const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
                             newVector.normalize();
                             newVector.negate();
@@ -430,9 +430,13 @@
         <Folder title="Scenes" expanded={false}>
             {#if allScene.length}
                 {#each allScene as [_, id, name, desc], i (`${id}_${_}_${i}}`)}
-                    <Folder title={name} expanded={false}>
+                    <Folder title={name + (id === _sceneData.id ? " (*)" : "")} expanded={false}>
                         <Text label="Id" value={id.toString()} disabled/>
-                        <Text label="Description" value={desc} disabled/>
+                        {#if id === _sceneData.id}
+                            <Text label="Description" bind:value={_sceneData.description}/>
+                        {:else}
+                            <Text label="Description" value={desc} disabled/>
+                        {/if}
                         {#if id !== _sceneData.id}
                             <ButtonGrid buttons={["Delete", "Go"]} on:click={e => {
                                 if (e.detail.label === "Delete") {
@@ -470,7 +474,6 @@
                         options: []
                     };
                     addScene(newScene).then(result => {
-                        // FIXME: allScene is not updated
                         allScene = [...allScene, [`${result.name} (${result.id})`, result.id, result.name, result?.description]];
                     }).catch(e => {
                         alert(`Error adding scene, error: ${e.message}`);

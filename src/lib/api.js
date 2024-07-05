@@ -28,7 +28,7 @@ export const updateScene = async (sceneId, scene, _delete = false) => {
         method: _delete ? "DELETE" : "PUT",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": localStorage.getItem("password"),
+            "Authorization": localStorage.getItem("password") || "",
         },
         body: JSON.stringify(scene),
     })
@@ -45,7 +45,7 @@ export const addScene = async (scene) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Authorization": localStorage.getItem("password"),
+            "Authorization": localStorage.getItem("password") || "",
         },
         body: JSON.stringify(scene),
     })
@@ -53,6 +53,6 @@ export const addScene = async (scene) => {
             if (response.status !== 201) {
                 throw new Error(response.status.toString());
             }
-            return scene;
+            return response.json();
         });
 }
