@@ -16,7 +16,7 @@
         ThemeUtils,
         Wheel
     } from "svelte-tweakpane-ui";
-    import { getScenes, getScene, updateScene } from "$lib/api.js";
+    import { getScenes, getScene, updateScene, addScene } from "$lib/api.js";
     import { easeOutExpo } from "$lib/utils.js";
 
     interactivity();
@@ -384,86 +384,98 @@
                     }}/>
                 </Folder>
             {/each}
+            <Separator/>
+            <Folder title="Add option" expanded={false}>
+                <RadioGrid bind:value={newType} values={["Popup", "Navigation"]}/>
+                {#if newType === "Popup"}
+                    <Text label="Name" bind:value={newText}/>
+                    <Checkbox label="Rounded" bind:value={newRounded}/>
+                    <Checkbox label="Animated" bind:value={newAnimated}/>
+                {:else if newType === "Navigation"}
+                    <Text label="Name" bind:value={newText}/>
+                    <List label="Next scene" bind:value={newNextId} options={Object.fromEntries(allScene.filter(scene => scene[1] !== _sceneData.id).map(scene => scene.slice(0, 2)))}/>
+                    <Checkbox label="Animated" bind:value={newAnimated}/>
+                {/if}
+                <Button title="Add" on:click={() => {
+                    if (newText === "") return;
+                    if (newType === "Popup") {
+                        _sceneData.options = [..._sceneData.options, {
+                            type: "popup",
+                            text: newText,
+                            rounded: newRounded,
+                            animated: newAnimated,
+                            position: [0, 0, 0],
+                            rotation: [0, 0, 0],
+                            popupText: ""
+                        }];
+                        positions.push([0, 0, 0]);
+                        positionsPolar = [...positionsPolar, [0, 0]]
+                        rotations.push([0, 0, 0]);
+                    } else if (newType === "Navigation") {
+                        _sceneData.options = [..._sceneData.options, {
+                            type: "navigation",
+                            text: newText,
+                            nextSceneId: newNextId,
+                            animated: newAnimated,
+                            position: [0, 0, 0],
+                            rotation: [0, 0, 0]
+                        }];
+                        positions.push([0, 0, 0]);
+                        positionsPolar = [...positionsPolar, [0, 0]]
+                        rotations.push([0, 0, 0]);
+                    }
+                }}/>
+            </Folder>
         </Folder>
-        <Folder title="Scenes" expanded={false}>
-            {#each allScene as [_, id, name, desc] (id)}
-                <Folder title={name} expanded={false}>
-                    <Text label="Id" value={id.toString()} disabled/>
-                    <Text label="Description" value={desc} disabled/>
-                    {#if id !== _sceneData.id}
-                        <ButtonGrid buttons={["Delete", "Go"]} on:click={e => {
-                            if (e.detail.label === "Delete") {
-                                if (confirm("Are you sure you want to delete this scene?\nChanges will apply immediately.\nPlease remove any references to this scene before deleting to avoid any error.")) {
-                                    updateScene(id, {}, true).then(() => {
-                                        allScene = allScene.filter(scene => scene[1] !== id);
-                                    }).catch(e => {
-                                        if (e.message === "401") alert("You are not authorized to delete this scene");
-                                        else alert(`Error deleting scene, error: ${e.message}`);
+        <Folder title="Scenes" expanded={true}>
+            {#if allScene.length}
+                {#each allScene as [_, id, name, desc], i (`${id}_${_}_${i}}`)}
+                    <Folder title={name} expanded={false}>
+                        <Text label="Id" value={id.toString()} disabled/>
+                        <Text label="Description" value={desc} disabled/>
+                        {#if id !== _sceneData.id}
+                            <ButtonGrid buttons={["Delete", "Go"]} on:click={e => {
+                                if (e.detail.label === "Delete") {
+                                    if (confirm("Are you sure you want to delete this scene?\nChanges will apply immediately.\nPlease remove any references to this scene before deleting to avoid any error.")) {
+                                        updateScene(id, {}, true).then(() => {
+                                            allScene = allScene.filter(scene => scene[1] !== id);
+                                        }).catch(e => {
+                                            if (e.message === "401") alert("You are not authorized to delete this scene");
+                                            else alert(`Error deleting scene, error: ${e.message}`);
+                                        });
+                                    }
+                                } else if (e.detail.label === "Go") {
+                                    texture = null;
+                                    disableControl();
+                                    getScene(id).then(result => {
+                                        sceneData = result;
                                     });
                                 }
-                            } else if (e.detail.label === "Go") {
-                                texture = null;
-                                disableControl();
-                                getScene(id).then(result => {
-                                    sceneData = result;
-                                });
-                            }
-                        }}/>
-                    {/if}
-                </Folder>
-            {/each}
-        </Folder>
-        <Separator/>
-        <Folder title="Add option" expanded={false}>
-            <RadioGrid bind:value={newType} values={["Popup", "Navigation"]}/>
-            {#if newType === "Popup"}
-                <Text label="Name" bind:value={newText}/>
-                <Checkbox label="Rounded" bind:value={newRounded}/>
-                <Checkbox label="Animated" bind:value={newAnimated}/>
-            {:else if newType === "Navigation"}
-                <Text label="Name" bind:value={newText}/>
-                <List label="Next scene" bind:value={newNextId} options={Object.fromEntries(allScene.filter(scene => scene[1] !== _sceneData.id).map(scene => scene.slice(0, 2)))}/>
-                <Checkbox label="Animated" bind:value={newAnimated}/>
+                            }}/>
+                        {/if}
+                    </Folder>
+                {/each}
             {/if}
-            <Button title="Add" on:click={() => {
-                if (newText === "") return;
-                if (newType === "Popup") {
-                    _sceneData.options = [..._sceneData.options, {
-                        type: "popup",
-                        text: newText,
-                        rounded: newRounded,
-                        animated: newAnimated,
-                        position: [0, 0, 0],
-                        rotation: [0, 0, 0],
-                        popupText: ""
-                    }];
-                    positions.push([0, 0, 0]);
-                    positionsPolar = [...positionsPolar, [0, 0]]
-                    rotations.push([0, 0, 0]);
-                } else if (newType === "Navigation") {
-                    _sceneData.options = [..._sceneData.options, {
-                        type: "navigation",
-                        text: newText,
-                        nextSceneId: newNextId,
-                        animated: newAnimated,
-                        position: [0, 0, 0],
-                        rotation: [0, 0, 0]
-                    }];
-                    positions.push([0, 0, 0]);
-                    positionsPolar = [...positionsPolar, [0, 0]]
-                    rotations.push([0, 0, 0]);
-                }
-            }}/>
-        </Folder>
-        <Folder title="Add scene" expanded={false}>
-            <Text value="Not implemented" disabled/>
-            <Text label="Url" bind:value={newSceneUrl}/>
-            <Text label="Name" bind:value={newSceneName}/>
-            <Textarea label="Description" bind:value={newSceneDesc} placeholder="Description (optional)"/>
-            <Button title="Add" on:click={() => {
-                if (newSceneUrl === "" || newSceneName === "") return;
-                console.log(newSceneUrl, newSceneName, newSceneDesc);
-            }}/>
+            <Separator/>
+            <Folder title="Add scene" expanded={false}>
+                <Text label="Url" bind:value={newSceneUrl}/>
+                <Text label="Name" bind:value={newSceneName}/>
+                <Textarea label="Description" bind:value={newSceneDesc} placeholder="Description (optional)"/>
+                <Button title="Add" on:click={() => {
+                    if (newSceneUrl === "" || newSceneName === "") return;
+                    const newScene = {
+                        name: newSceneName,
+                        description: newSceneDesc,
+                        image: newSceneUrl,
+                        options: []
+                    };
+                    addScene(newScene).then(result => {
+                        allScene = [...allScene, [`${result.name} (${result.id})`, result.id, result.name, result?.description]];
+                    }).catch(e => {
+                        alert(`Error adding scene, error: ${e.message}`);
+                    });
+                }}/>
+            </Folder>
         </Folder>
         <Separator/>
         <Folder title="Change image" expanded={false}>

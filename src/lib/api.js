@@ -39,3 +39,20 @@ export const updateScene = async (sceneId, scene, _delete = false) => {
             return response.json();
         });
 };
+
+export const addScene = async (scene) => {
+    return await fetch(`${API_ENDPOINT}/scenes`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": localStorage.getItem("password"),
+        },
+        body: JSON.stringify(scene),
+    })
+        .then((response) => {
+            if (response.status !== 201) {
+                throw new Error(response.status.toString());
+            }
+            return scene;
+        });
+}
