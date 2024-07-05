@@ -37,6 +37,7 @@
     let grid = true;
     let wireframe = false;
     let cameraOffset = 1;
+    let cameraFov = 140;
     let sphereRadius = 100;
     let sphereSegmentsW = 48;
     let sphereSegmentsH = 48;
@@ -78,6 +79,7 @@
                 transition_d += initLoad ? delta / 3 : delta;
                 const ease = easeOutExpo(transition_d);
                 camera.current.position.lerpVectors(sourceVector, destinationVector, ease);
+                cameraFov = 140 + (60 - 140) * ease;
                 cameraControlRef.update();
             }
         } else if (transition_d >= max) {
@@ -103,7 +105,7 @@
         }
 
         if (initLoad) {
-            camera.current.position.set(0, 300, 0);
+            camera.current.position.set(0, 90, 0);
             cameraControlRef.update();
         } else {
             resetCamera();
@@ -143,7 +145,7 @@
     };
 
     const zoom = (delta) => {
-        if (cameraRef !== null) {
+        if (cameraRef !== null && !optionsDisabled) {
             const min = 10;
             const max = 60;
             camera.current.fov += delta * 0.008;
@@ -229,7 +231,7 @@
 
 <T.PerspectiveCamera
         makeDefault
-        fov={60}
+        fov={cameraFov}
         near={1}
         far={1000}
         bind:ref={cameraRef}
@@ -330,6 +332,7 @@
     >
         <Checkbox bind:value={perf} label="Performance"/>
         <Wheel label="Camera offset" step={1} bind:value={cameraOffset}/>
+        <Wheel label="Camera FOV" step={1} bind:value={cameraFov}/>
         <Wheel label="Segments W" min={0} max={120} step={1} bind:value={sphereSegmentsW}/>
         <Wheel label="Segments H" min={0} max={120} step={1} bind:value={sphereSegmentsH}/>
         <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
