@@ -132,7 +132,7 @@
         }
     }
 
-    $: if (sceneData) {
+    $: if (sceneData && typeof window !== "undefined") {
         processSceneData(sceneData);
     }
 

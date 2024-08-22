@@ -5,6 +5,8 @@
     import { getScene } from "$lib/api.js";
     import * as THREE from "three";
     import { PerfMonitor } from "@threlte/extras";
+    import ProgressBar from "./ProgressBar.svelte";
+    import { progress } from "$lib/stores.js";
 
     let height = 0;
     let perf = true;
@@ -18,6 +20,8 @@
 
 <div id="css-renderer-target-2d" class="absolute top-0 right-0 pointer-events-none"></div>
 <div id="css-renderer-target-3d" class="absolute top-0 right-0 pointer-events-none"></div>
+
+<ProgressBar progress={$progress}/>
 
 <div style={`height: ${height}px;`} class="bg-transparent">
     {#await getScene(1) then scene}
