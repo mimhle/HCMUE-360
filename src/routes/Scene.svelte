@@ -18,6 +18,7 @@
     } from "svelte-tweakpane-ui";
     import { getScenes, getScene, updateScene, addScene } from "$lib/api.js";
     import { easeOutExpo } from "$lib/utils.js";
+    import Popover from "./Popover.svelte";
 
     interactivity();
 
@@ -33,8 +34,10 @@
     let destinationVector = null;
     let afterTransition = null;
 
+    let hideDebug = false;
+    let gizmo = true;
     let lighting = Math.PI;
-    let grid = true;
+    let grid = false;
     let wireframe = false;
     let cameraOffset = 1;
     let cameraFov = 140;
@@ -244,6 +247,7 @@
         bind:ref={cameraRef}
 >
     <OrbitControls enableDamping
+                   dampingFactor={0.1}
                    rotateSpeed={rotateSpeed}
                    enablePan={false}
                    enableZoom={false}
@@ -253,11 +257,13 @@
 
 <T.AmbientLight intensity={lighting}/>
 
-<Gizmo
-        horizontalPlacement="left"
-        paddingX={20}
-        paddingY={20}
-/>
+{#if gizmo}
+    <Gizmo
+            horizontalPlacement="left"
+            paddingX={20}
+            paddingY={20}
+    />
+{/if}
 
 <T.Mesh scale.x={-1}>
     <T.SphereGeometry args={[sphereRadius, sphereSegmentsW, sphereSegmentsH]}/>
@@ -284,22 +290,38 @@
                            rotation={rotations[i]}
                            pointerEvents={true}
                 >
-                    <div class="bg-surface text-white -translate-x-1/2 {option.rounded ? `rounded-full` : ``} {option.animated ? `animate-pulse-btn` : ``}">
-                        <button class="p-2 overflow-hidden" on:click={() =>{
-                            const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
-                            newVector.normalize();
-                            newVector.negate();
-                            disableControl(false);
+                    <div class="bg-surface text-white -translate-x-1/2 {option.rounded ? `rounded-[50%]` : ``} {option.animated ? `[&:not(:hover)]:animate-pulse-btn` : ``}">
+                        <Popover arrowX="center" placementX="center">
+                            <button slot="target" class="p-2 overflow-hidden w-10 h-10" on:click={() =>{
+                                const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
+                                newVector.normalize();
+                                newVector.negate();
+                                disableControl(false);
 
-                            moveCamera(newVector, () => {
-                                alert("button clicked");
-                                enableControl();
-                            });
-                        }} on:wheel={(e) => {
-                            zoom(e.deltaY);
-                        }} bind:this={buttonRefs[i]}>
-                            {option.text}
-                        </button>
+                                moveCamera(newVector, () => {
+                                    alert("button clicked");
+                                    enableControl();
+                                });
+                            }} on:wheel={(e) => {
+                                zoom(e.deltaY);
+                            }} bind:this={buttonRefs[i]}>
+                                <i class="fa fa-info fa-lg"></i>
+                            </button>
+                            <div slot="content" class="bg-surface rounded-lg p-3 w-max max-w-[60vw] !pointer-events-auto inline-block">
+                                {option.text}
+                                <p>
+                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec purus
+                                    ultricies, ultricies nunc nec, ultricies nunc. Nullam nec purus ultricies,
+                                    ultricies nunc nec, ultricies nunc.
+                                </p>
+                                <p>
+                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec purus
+                                    ultricies, ultricies nunc nec, ultricies nunc. Nullam nec purus ultricies,
+                                    ultricies nunc nec, ultricies nunc.
+                                </p>
+                            </div>
+                        </Popover>
+
                     </div>
                 </CssObject>
             {:else if option.type === "navigation"}
@@ -335,176 +357,182 @@
         {/each}
     {/if}
 
-    <Pane
-            theme={ThemeUtils.presets.light}
-            position="fixed"
-            title="Debug menu, remove before production"
-            width={270}
-    >
-        <Checkbox bind:value={perf} label="Performance"/>
-        <Wheel label="Camera offset" step={1} bind:value={cameraOffset}/>
-        <Wheel label="Camera FOV" step={1} bind:value={cameraFov}/>
-        <Wheel label="Segments W" min={0} max={120} step={1} bind:value={sphereSegmentsW}/>
-        <Wheel label="Segments H" min={0} max={120} step={1} bind:value={sphereSegmentsH}/>
-        <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
-        <Checkbox bind:value={grid} label="Grid"/>
-        <Checkbox bind:value={wireframe} label="Wireframe"/>
-        <Folder title="Options" expanded={false}>
-            {#each _sceneData.options as option, i (`${i}_${option.text}`)}
-                <Folder title={_sceneData.options[i].text} expanded={false}>
-                    {#if _sceneData.options[i].type === "navigation"}
-                        <List label="Next scene" bind:value={_sceneData.options[i].nextSceneId} options={Object.fromEntries(allScene.filter(scene => scene[1] !== _sceneData.id).map(scene => scene.slice(0, 2)))}/>
-                        <RotationEuler bind:value={rotations[i]}
-                                       expanded={false}
-                                       label="Rotation"
-                                       picker={'inline'}
+    {#if !hideDebug}
+        <Pane
+                theme={ThemeUtils.presets.light}
+                position="fixed"
+                title="Debug menu, remove before production"
+                width={270}
+        >
+            <Button title="Hide debug menu" on:click={() => {
+                hideDebug = true;
+            }}/>
+            <Checkbox bind:value={perf} label="Performance"/>
+            <Checkbox bind:value={gizmo} label="Gizmo"/>
+            <Wheel label="Camera offset" step={1} bind:value={cameraOffset}/>
+            <Wheel label="Camera FOV" step={1} bind:value={cameraFov}/>
+            <Wheel label="Segments W" min={0} max={120} step={1} bind:value={sphereSegmentsW}/>
+            <Wheel label="Segments H" min={0} max={120} step={1} bind:value={sphereSegmentsH}/>
+            <Slider label="Lighting" min={0} max={10} step={0.1} bind:value={lighting}/>
+            <Checkbox bind:value={grid} label="Grid"/>
+            <Checkbox bind:value={wireframe} label="Wireframe"/>
+            <Folder title="Options" expanded={false}>
+                {#each _sceneData.options as option, i (`${i}_${option.text}`)}
+                    <Folder title={_sceneData.options[i].text} expanded={false}>
+                        {#if _sceneData.options[i].type === "navigation"}
+                            <List label="Next scene" bind:value={_sceneData.options[i].nextSceneId} options={Object.fromEntries(allScene.filter(scene => scene[1] !== _sceneData.id).map(scene => scene.slice(0, 2)))}/>
+                            <RotationEuler bind:value={rotations[i]}
+                                           expanded={false}
+                                           label="Rotation"
+                                           picker={'inline'}
+                            />
+                        {/if}
+                        <Point bind:value={positionsPolar[i]}
+                               expanded={true}
+                               label="Position"
+                               picker="inline"
+                               min={-Math.PI}
+                               max={Math.PI}
+                               step={0.01}
+                               userExpandable={true}
                         />
+                        <ButtonGrid buttons={["Delete", "Locate"]} on:click={e => {
+                            if (e.detail.label === "Delete") {
+                                _sceneData.options = _sceneData.options.filter((_, j) => j !== i);
+                                positions = positions.filter((_, j) => j !== i);
+                                positionsPolar = positionsPolar.filter((_, j) => j !== i);
+                                rotations = rotations.filter((_, j) => j !== i);
+                            } else if (e.detail.label === "Locate") {
+                                const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
+                                newVector.normalize();
+                                newVector.negate();
+                                moveCamera(newVector, () => {});
+                            }
+                        }}/>
+                    </Folder>
+                {/each}
+                <Separator/>
+                <Folder title="Add option" expanded={false}>
+                    <RadioGrid bind:value={newType} values={["Popup", "Navigation"]}/>
+                    {#if newType === "Popup"}
+                        <Text label="Name" bind:value={newText}/>
+                        <Checkbox label="Rounded" bind:value={newRounded}/>
+                        <Checkbox label="Animated" bind:value={newAnimated}/>
+                    {:else if newType === "Navigation"}
+                        <Text label="Name" bind:value={newText}/>
+                        <List label="Next scene" bind:value={newNextId} options={Object.fromEntries(allScene.filter(scene => scene[1] !== _sceneData.id).map(scene => scene.slice(0, 2)))}/>
+                        <Checkbox label="Animated" bind:value={newAnimated}/>
                     {/if}
-                    <Point bind:value={positionsPolar[i]}
-                           expanded={true}
-                           label="Position"
-                           picker="inline"
-                           min={-Math.PI}
-                           max={Math.PI}
-                           step={0.01}
-                           userExpandable={true}
-                    />
-                    <ButtonGrid buttons={["Delete", "Locate"]} on:click={e => {
-                        if (e.detail.label === "Delete") {
-                            _sceneData.options = _sceneData.options.filter((_, j) => j !== i);
-                            positions = positions.filter((_, j) => j !== i);
-                            positionsPolar = positionsPolar.filter((_, j) => j !== i);
-                            rotations = rotations.filter((_, j) => j !== i);
-                        } else if (e.detail.label === "Locate") {
-                            const newVector = new THREE.Vector3(positions[i][0], positions[i][1], positions[i][2]);
-                            newVector.normalize();
-                            newVector.negate();
-                            moveCamera(newVector, () => {});
+                    <Button title="Add" on:click={() => {
+                        if (newText === "") return;
+                        if (newType === "Popup") {
+                            _sceneData.options = [..._sceneData.options, {
+                                type: "popup",
+                                text: newText,
+                                rounded: newRounded,
+                                animated: newAnimated,
+                                position: [0, 0, 0],
+                                rotation: [0, 0, 0],
+                                popupText: ""
+                            }];
+                            positions.push([0, 0, 0]);
+                            positionsPolar = [...positionsPolar, [0, 0]]
+                            rotations.push([0, 0, 0]);
+                        } else if (newType === "Navigation") {
+                            _sceneData.options = [..._sceneData.options, {
+                                type: "navigation",
+                                text: newText,
+                                nextSceneId: newNextId,
+                                animated: newAnimated,
+                                position: [0, 0, 0],
+                                rotation: [0, 0, 0]
+                            }];
+                            positions.push([0, 0, 0]);
+                            positionsPolar = [...positionsPolar, [0, 0]]
+                            rotations.push([0, 0, 0]);
                         }
                     }}/>
                 </Folder>
-            {/each}
-            <Separator/>
-            <Folder title="Add option" expanded={false}>
-                <RadioGrid bind:value={newType} values={["Popup", "Navigation"]}/>
-                {#if newType === "Popup"}
-                    <Text label="Name" bind:value={newText}/>
-                    <Checkbox label="Rounded" bind:value={newRounded}/>
-                    <Checkbox label="Animated" bind:value={newAnimated}/>
-                {:else if newType === "Navigation"}
-                    <Text label="Name" bind:value={newText}/>
-                    <List label="Next scene" bind:value={newNextId} options={Object.fromEntries(allScene.filter(scene => scene[1] !== _sceneData.id).map(scene => scene.slice(0, 2)))}/>
-                    <Checkbox label="Animated" bind:value={newAnimated}/>
-                {/if}
-                <Button title="Add" on:click={() => {
-                    if (newText === "") return;
-                    if (newType === "Popup") {
-                        _sceneData.options = [..._sceneData.options, {
-                            type: "popup",
-                            text: newText,
-                            rounded: newRounded,
-                            animated: newAnimated,
-                            position: [0, 0, 0],
-                            rotation: [0, 0, 0],
-                            popupText: ""
-                        }];
-                        positions.push([0, 0, 0]);
-                        positionsPolar = [...positionsPolar, [0, 0]]
-                        rotations.push([0, 0, 0]);
-                    } else if (newType === "Navigation") {
-                        _sceneData.options = [..._sceneData.options, {
-                            type: "navigation",
-                            text: newText,
-                            nextSceneId: newNextId,
-                            animated: newAnimated,
-                            position: [0, 0, 0],
-                            rotation: [0, 0, 0]
-                        }];
-                        positions.push([0, 0, 0]);
-                        positionsPolar = [...positionsPolar, [0, 0]]
-                        rotations.push([0, 0, 0]);
-                    }
-                }}/>
             </Folder>
-        </Folder>
-        <Folder title="Scenes" expanded={false}>
-            {#if allScene.length}
-                {#each allScene as [_, id, name, desc], i (`${id}_${_}_${i}}`)}
-                    <Folder title={name + (id === _sceneData.id ? " (*)" : "")} expanded={false}>
-                        <Text label="Id" value={id.toString()} disabled/>
-                        {#if id === _sceneData.id}
-                            <Text label="Description" bind:value={_sceneData.description}/>
-                        {:else}
-                            <Text label="Description" value={desc} disabled/>
-                        {/if}
-                        {#if id !== _sceneData.id}
-                            <ButtonGrid buttons={["Delete", "Go"]} on:click={e => {
-                                if (e.detail.label === "Delete") {
-                                    if (confirm("Are you sure you want to delete this scene?\nChanges will apply immediately.\nPlease remove any references to this scene before deleting to avoid any error.")) {
-                                        updateScene(id, {}, true).then(() => {
-                                            allScene = allScene.filter(scene => scene[1] !== id);
-                                        }).catch(e => {
-                                            if (e.message === "401") alert("You are not authorized to delete this scene");
-                                            else alert(`Error deleting scene, error: ${e.message}`);
+            <Folder title="Scenes" expanded={false}>
+                {#if allScene.length}
+                    {#each allScene as [_, id, name, desc], i (`${id}_${_}_${i}}`)}
+                        <Folder title={name + (id === _sceneData.id ? " (*)" : "")} expanded={false}>
+                            <Text label="Id" value={id.toString()} disabled/>
+                            {#if id === _sceneData.id}
+                                <Text label="Description" bind:value={_sceneData.description}/>
+                            {:else}
+                                <Text label="Description" value={desc} disabled/>
+                            {/if}
+                            {#if id !== _sceneData.id}
+                                <ButtonGrid buttons={["Delete", "Go"]} on:click={e => {
+                                    if (e.detail.label === "Delete") {
+                                        if (confirm("Are you sure you want to delete this scene?\nChanges will apply immediately.\nPlease remove any references to this scene before deleting to avoid any error.")) {
+                                            updateScene(id, {}, true).then(() => {
+                                                allScene = allScene.filter(scene => scene[1] !== id);
+                                            }).catch(e => {
+                                                if (e.message === "401") alert("You are not authorized to delete this scene");
+                                                else alert(`Error deleting scene, error: ${e.message}`);
+                                            });
+                                        }
+                                    } else if (e.detail.label === "Go") {
+                                        texture = null;
+                                        disableControl();
+                                        getScene(id).then(result => {
+                                            sceneData = result;
                                         });
                                     }
-                                } else if (e.detail.label === "Go") {
-                                    texture = null;
-                                    disableControl();
-                                    getScene(id).then(result => {
-                                        sceneData = result;
-                                    });
-                                }
-                            }}/>
-                        {/if}
-                    </Folder>
-                {/each}
-            {/if}
+                                }}/>
+                            {/if}
+                        </Folder>
+                    {/each}
+                {/if}
+                <Separator/>
+                <Folder title="Add scene" expanded={false}>
+                    <Text label="Url" bind:value={newSceneUrl}/>
+                    <Text label="Name" bind:value={newSceneName}/>
+                    <Textarea label="Description" bind:value={newSceneDesc} placeholder="Description (optional)"/>
+                    <Button title="Add" on:click={() => {
+                        if (newSceneUrl === "" || newSceneName === "") return;
+                        const newScene = {
+                            name: newSceneName,
+                            description: newSceneDesc,
+                            image: newSceneUrl,
+                            options: []
+                        };
+                        addScene(newScene).then(result => {
+                            allScene = [...allScene, [`${result.name} (${result.id})`, result.id, result.name, result?.description]];
+                        }).catch(e => {
+                            alert(`Error adding scene, error: ${e.message}`);
+                        });
+                    }}/>
+                </Folder>
+            </Folder>
             <Separator/>
-            <Folder title="Add scene" expanded={false}>
-                <Text label="Url" bind:value={newSceneUrl}/>
-                <Text label="Name" bind:value={newSceneName}/>
-                <Textarea label="Description" bind:value={newSceneDesc} placeholder="Description (optional)"/>
-                <Button title="Add" on:click={() => {
-                    if (newSceneUrl === "" || newSceneName === "") return;
-                    const newScene = {
-                        name: newSceneName,
-                        description: newSceneDesc,
-                        image: newSceneUrl,
-                        options: []
-                    };
-                    addScene(newScene).then(result => {
-                        allScene = [...allScene, [`${result.name} (${result.id})`, result.id, result.name, result?.description]];
-                    }).catch(e => {
-                        alert(`Error adding scene, error: ${e.message}`);
+            <Folder title="Change image" expanded={false}>
+                <Element>
+                    <input class="my-1" type="file" accept="image/*" on:change={e => {
+                        const reader = new FileReader();
+                        reader.addEventListener('load', function ( event ) {
+                            new THREE.TextureLoader().load(event.target.result.toString(), (t) => {
+                                texture = t;
+                                texture.colorSpace = THREE.SRGBColorSpace;
+                            });
+                        });
+                        reader.readAsDataURL(e.target.files[0]);
+                    }}/>
+                </Element>
+                <Separator/>
+                <Text label="From url: " bind:value={newSceneUrl}/>
+                <Button title="Load" on:click={() => {
+                    texture = null;
+                    new THREE.TextureLoader().load(newSceneUrl, (t) => {
+                        texture = t;
+                        texture.colorSpace = THREE.SRGBColorSpace;
                     });
                 }}/>
             </Folder>
-        </Folder>
-        <Separator/>
-        <Folder title="Change image" expanded={false}>
-            <Element>
-                <input class="my-1" type="file" accept="image/*" on:change={e => {
-                    const reader = new FileReader();
-                    reader.addEventListener('load', function ( event ) {
-                        new THREE.TextureLoader().load(event.target.result.toString(), (t) => {
-                            texture = t;
-                            texture.colorSpace = THREE.SRGBColorSpace;
-                        });
-                    });
-                    reader.readAsDataURL(e.target.files[0]);
-                }}/>
-            </Element>
-            <Separator/>
-            <Text label="From url: " bind:value={newSceneUrl}/>
-            <Button title="Load" on:click={() => {
-                texture = null;
-                new THREE.TextureLoader().load(newSceneUrl, (t) => {
-                    texture = t;
-                    texture.colorSpace = THREE.SRGBColorSpace;
-                });
-            }}/>
-        </Folder>
-        <Button title="Save" on:click={save}/>
-    </Pane>
+            <Button title="Save" on:click={save}/>
+        </Pane>
+    {/if}
 {/if}

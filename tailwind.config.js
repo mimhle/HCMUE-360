@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       animation: {
-        'pulse-btn': 'pulse-btn 1.5s linear infinite',
+        'pulse-btn': 'pulse-btn 1.5s linear infinite 1s',
       },
       colors: {
         primary: 'rgba(var(--color-primary), <alpha-value>)',
