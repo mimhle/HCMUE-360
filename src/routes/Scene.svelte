@@ -157,7 +157,7 @@
             const max = 60;
             camera.current.fov += delta * 0.008;
             camera.current.fov = Math.max(min, Math.min(max, camera.current.fov));
-            // TODO: scale speed with fov
+            rotateSpeed = -0.25 * (camera.current.fov / max);
             cameraRef.updateProjectionMatrix();
         }
     };
