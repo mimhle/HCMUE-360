@@ -367,6 +367,13 @@
             <Button title="Hide debug menu" on:click={() => {
                 hideDebug = true;
             }}/>
+            <Button title="Hide all" on:click={() => {
+                hideDebug = true;
+                gizmo = false;
+                grid = false;
+                wireframe = false;
+                perf = false;
+            }}/>
             <Checkbox bind:value={perf} label="Performance"/>
             <Checkbox bind:value={gizmo} label="Gizmo"/>
             <Wheel label="Camera offset" step={1} bind:value={cameraOffset}/>
