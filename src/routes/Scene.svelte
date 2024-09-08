@@ -27,7 +27,7 @@
 
     let _sceneData;
 
-    let initLoad = true;
+    let initLoad = false;
 
     let transition_d = 0;
     let sourceVector = null;
@@ -40,7 +40,7 @@
     let grid = false;
     let wireframe = false;
     let cameraOffset = 1;
-    let cameraFov = 140;
+    let cameraFov = 80;
     let sphereRadius = 100;
     let sphereSegmentsW = 48;
     let sphereSegmentsH = 48;
@@ -86,7 +86,7 @@
                 transition_d += initLoad ? delta / 3 : delta;
                 const ease = easeOutExpo(transition_d);
                 camera.current.position.lerpVectors(sourceVector, destinationVector, ease);
-                if (initLoad) cameraFov = 140 + (60 - 140) * ease;
+                if (initLoad) cameraFov = 140 + (80 - 140) * ease;
                 cameraControlRef.update();
             }
         } else if (transition_d >= max) {
@@ -154,7 +154,7 @@
     const zoom = (delta) => {
         if (cameraRef !== null && !optionsDisabled) {
             const min = 10;
-            const max = 60;
+            const max = 80;
             camera.current.fov += delta * 0.008;
             camera.current.fov = Math.max(min, Math.min(max, camera.current.fov));
             rotateSpeed = -0.25 * (camera.current.fov / max);
